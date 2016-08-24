@@ -27,4 +27,17 @@ namespace FinTransConverterLib.Helpers {
             .FirstOrDefault();
       }
    }
+
+    public static class StringExtensions {
+        public static String Indent(this String str, string indent) {
+            string target = "";
+            var splitString = str.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach(var substring in splitString) {
+                target = String.Format("{0}{1}{2}" + Environment.NewLine, target, indent, substring);
+            }
+
+            return target;
+        }
+    }
 }

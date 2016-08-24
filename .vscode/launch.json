@@ -11,7 +11,7 @@
              "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/umsaetze-girokonto_19250_65303084205_EUR_2016-08-20_17-33-14.csv", 
              "outputfile", 
              "HelloBankToHomebank", 
-             "--homebankSettingsFile=homebankSettings.xhb"
+             "--homebankSettingsFile=/home/georg/Dokumente/Finanzen/HomeBank/GeorgHirn_Finanzen.xhb"
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",
          "stopAtEntry": false,

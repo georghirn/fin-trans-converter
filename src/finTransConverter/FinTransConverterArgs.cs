@@ -43,7 +43,7 @@ namespace FinTransConverter {
       
       public bool OptVersion { get { return _args["--version"].IsTrue; } }
 
-      public string HomebankSettingsFile { get { return _args["HOMEBANKSETTINGS"].ToString(); } }
+      public string HomebankSettingsFile { get { return _args["--homebankSettingsFile"].ToString(); } }
 
       public eConversionType ConversionType {
          get { return _conversionType; }
