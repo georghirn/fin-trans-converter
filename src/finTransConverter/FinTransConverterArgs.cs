@@ -1,9 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using DocoptNet;
 using FinTransConverterLib.Helpers;
+using FinTransConverterLib.FinanceEntities;
 
 namespace FinTransConverter {
    public class FinTransConverterArgs {
@@ -73,10 +73,5 @@ namespace FinTransConverter {
 
          throw new DocoptInputErrorException("Invalid conversion type.");
       }
-   }
-   
-   public enum eConversionType {
-      [Description("Converts from the Hello Bank *.csv format to the Hombank *.csv format.")]
-      HelloBankToHomebank
    }
 }

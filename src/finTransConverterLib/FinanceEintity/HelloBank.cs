@@ -6,14 +6,15 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using FinTransConverterLib.Transactions;
 
-namespace FinTransConverterLib.Accounts {
-    public class HelloBankAccount : Account {
+namespace FinTransConverterLib.FinanceEntities {
+    public class HelloBank : FinanceEntity {
         private CultureInfo culture;
 
-        public HelloBankAccount(CultureInfo ci = null) 
+        public HelloBank(eFinanceEntityType entityType, CultureInfo ci = null) 
         : base(
-            new List<FileType>() { Account.PossibleFileTypes[eFileTypes.Csv] }, // supported read file types
-            new List<FileType>() {} // supported write file types
+            new List<FileType>() { FinanceEntity.PossibleFileTypes[eFileTypes.Csv] }, // supported read file types
+            new List<FileType>() {}, // supported write file types
+            entityType
         ) { 
             culture = ci ?? (ci = CultureInfo.InvariantCulture);
         }

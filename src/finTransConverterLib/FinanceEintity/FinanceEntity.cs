@@ -1,18 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using FinTransConverterLib.Transactions;
 
-namespace FinTransConverterLib.Accounts {
-    public interface IAccount {
+namespace FinTransConverterLib.FinanceEntities {
+    public interface IFinanceEntity {
+        eFinanceEntityType EntityType { get; }
+
         Dictionary<eFileTypes, FileType> SupportedReadFileTypes { get; }
         Dictionary<eFileTypes, FileType> SupportedWriteFileTypes { get; }
         void ReadFrom(string fileName);
         void WriteTo(string fileName);
     }
 
-    public abstract class Account : IAccount {
+    public abstract class FinanceEntity : IFinanceEntity {
         protected static readonly Dictionary<eFileTypes, FileType> PossibleFileTypes = new Dictionary<eFileTypes, FileType>() {
             { eFileTypes.Csv, new FileType() { Id = eFileTypes.Csv, Extension = ".csv", Description = "comma seperated values" } }, 
             { eFileTypes.Xhb, new FileType() { Id = eFileTypes.Xhb, Extension = ".xhb", Description = "Homebank xml settings file" } }
@@ -24,10 +27,13 @@ namespace FinTransConverterLib.Accounts {
 
         public List<Transaction> Transactions { get; protected set; }
 
-        public Account(List<FileType> suppReadFileTypes, List<FileType> suppWriteFileTypes) {
+        public eFinanceEntityType EntityType { get; private set; }
+
+        public FinanceEntity(List<FileType> suppReadFileTypes, List<FileType> suppWriteFileTypes, eFinanceEntityType entityType = eFinanceEntityType.Unknown) {
             Transactions = new List<Transaction>();
             SupportedReadFileTypes = new Dictionary<eFileTypes, FileType>();
             SupportedWriteFileTypes = new Dictionary<eFileTypes, FileType>();
+            EntityType = entityType;
 
             foreach(var fileType in suppReadFileTypes) SupportedReadFileTypes.Add(fileType.Id, fileType);
             foreach(var fileType in suppWriteFileTypes) SupportedWriteFileTypes.Add(fileType.Id, fileType);
@@ -103,5 +109,21 @@ namespace FinTransConverterLib.Accounts {
     public enum eFileTypes {
         Csv, 
         Xhb
+    }
+
+    public enum eFinanceEntityType {
+        [Description("The source account type is unknown.")]
+        Unknown,
+        [Description("The source account type is a check account.")]
+        CheckAccount, 
+        [Description("The source account type is a debit account.")]
+        DebitAccount, 
+        [Description("The source account type is a credit card account.")]
+        CreditCardAccount
+    }
+   
+    public enum eConversionType {
+        [Description("Converts from the Hello Bank *.csv format to the Hombank *.csv format.")]
+        HelloBankToHomebank
     }
 }

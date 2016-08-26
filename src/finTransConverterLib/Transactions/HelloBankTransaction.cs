@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using CsvHelper;
+using FinTransConverterLib.FinanceEntities;
 
 namespace FinTransConverterLib.Transactions {
     public sealed class HelloBankTransaction : Transaction {
@@ -42,6 +43,23 @@ namespace FinTransConverterLib.Transactions {
                 "\t-> Memo = {8}" + Environment.NewLine, 
                 Iban, ExtractionNumber, AccountingDate, ValutaDate, PaymentReference, 
                 Currency, Amount, AccountingText, Memo);
+        }
+
+        public override bool IsDuplicate(ITransaction t) {
+            var trans = t as HelloBankTransaction;
+            if(trans == null) return false;
+
+            return AccountingDate.Equals(trans.AccountingDate) && 
+                ValutaDate.Equals(trans.ValutaDate) && 
+                PaymentReference.Equals(trans.PaymentReference) && 
+                Currency.Equals(trans.Currency) && 
+                Amount.Equals(trans.Amount) && 
+                AccountingText.Equals(trans.AccountingText) && 
+                Memo.Equals(trans.Memo);
+        }
+
+        public override void ConvertTransaction(ITransaction t, FinanceEntity feFrom = null, FinanceEntity feTo = null) {
+            base.ConvertTransaction(t, feFrom, feTo); // Currently no conversion supported by this class.
         }
     }
 }

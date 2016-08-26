@@ -3,23 +3,27 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
-//using FinTransConverterLib.Transactions;
+using FinTransConverterLib.Transactions;
 using FinTransConverterLib.Helpers;
 
-namespace FinTransConverterLib.Accounts {
-    public class HomeBankAccount : Account {
+namespace FinTransConverterLib.FinanceEntities {
+    public class HomeBank : FinanceEntity {
+        public List<HBAccount> Accounts { get; private set; }
         public List<HBPayee> Payees { get; private set; }
         public List<HBCategory> Categories { get; private set; }
         public List<HBAssignment> Assignments { get; private set; }
+        public List<HomeBankTransaction> ExistingTransactions { get; private set; }
 
-        public HomeBankAccount() 
+        public HomeBank() 
         : base (
-            new List<FileType> { Account.PossibleFileTypes[eFileTypes.Xhb] }, // supported read file types 
-            new List<FileType> { Account.PossibleFileTypes[eFileTypes.Csv] } // supported write file types
+            new List<FileType> { FinanceEntity.PossibleFileTypes[eFileTypes.Xhb] }, // supported read file types 
+            new List<FileType> { FinanceEntity.PossibleFileTypes[eFileTypes.Csv] } // supported write file types
         ) {
             Payees = new List<HBPayee>();
             Categories = new List<HBCategory>();
             Assignments = new List<HBAssignment>();
+            Accounts = new List<HBAccount>();
+            ExistingTransactions = new List<HomeBankTransaction>();
         }
 
         protected override void Read(TextReader input, FileType fileType) {
@@ -34,11 +38,8 @@ namespace FinTransConverterLib.Accounts {
 
         private void ParseHombankSettingsFile(TextReader input) {
             using(XmlReader reader = XmlReader.Create(input)) {
-                //reader.MoveToContent();
                 while(reader.Read()) {
                     if(reader.NodeType == XmlNodeType.Element) {
-                        //Console.WriteLine("NodeType: {0}, Name: {1}, Value: {2}", reader.NodeType.ToString(), reader.Name, reader.Value);
-                        
                         switch(reader.Name) {
                             case HBPayee.XmlTagName: 
                                 if(reader.HasAttributes) {
@@ -64,21 +65,103 @@ namespace FinTransConverterLib.Accounts {
                                     reader.MoveToElement();
                                 }
                                 break;
+                            case HBAccount.XmlTagName:
+                                if(reader.HasAttributes) {
+                                    var account = new HBAccount();
+                                    account.ParseXmlElement(reader);
+                                    Accounts.Add(account);
+                                    reader.MoveToElement();
+                                }
+                                break;
+                            case HomeBankTransaction.XmlTagName:
+                                if(reader.HasAttributes) {
+                                    var existingTransaction = new HomeBankTransaction();
+                                    existingTransaction.ParseXmlElement(reader, this);
+                                    ExistingTransactions.Add(existingTransaction);
+                                    reader.MoveToElement();
+                                }
+                                break;
                         }
-
-                        /*if(reader.HasAttributes) {
-                            Console.Write("Attributes of <" + reader.Name + ">: ");
-                            while (reader.MoveToNextAttribute()) {
-                                Console.Write(" {0}={1}", reader.Name, reader.Value);
-                            }
-                            Console.WriteLine();
-                            // Move the reader back to the element node.
-                            reader.MoveToElement();
-                        }*/
                     }
                 }
             }
         }
+    }
+
+    public class HBAccount {
+        public const string XmlTagName = "account";
+        public const string AttrKey = "key";
+        public const string AttrName = "name"; 
+        public const string AttrFlags = "flags";
+        public const string AttrPos = "pos";
+        public const string AttrType = "type";
+        public const string AttrNumber = "number";
+        public const string AttrBankname = "bankname";
+        public const string AttrInitial = "initial";
+        public const string AttrMinimum = "minimum";
+
+        public HBAccount() {}
+
+        public uint Key { get; private set; }
+        public string Name { get; private set; }
+        public string Flags { get; private set; }
+        public uint Position { get; private set; }
+        public eAccountType Type { get; private set; }
+        public string InstituteNumber { get; private set; }
+        public string InstituteName { get; private set; }
+        public double InitialAmount { get; private set; }
+        public double MinimumAmount { get; private set; }
+        
+        public void ParseXmlElement(XmlReader reader) {
+            while(reader.MoveToNextAttribute()) {
+                switch(reader.Name) {
+                    case AttrKey: Key = XmlConvert.ToUInt32(reader.Value); break;
+                    case AttrName: Name = reader.Value; break;
+                    case AttrFlags: Flags = reader.Value; break;
+                    case AttrPos: Position = XmlConvert.ToUInt32(reader.Value); break;
+                    case AttrType: 
+                        switch(XmlConvert.ToInt32(reader.Value)) {
+                            case (int)eAccountType.Institute: Type = eAccountType.Institute; break;
+                            case (int)eAccountType.Cash: Type = eAccountType.Cash; break;
+                            case (int)eAccountType.Assets: Type = eAccountType.Assets; break;
+                            case (int)eAccountType.CreditCard: Type = eAccountType.CreditCard; break;
+                            case (int)eAccountType.Liabilities: Type = eAccountType.Liabilities; break;
+                            default: Type = eAccountType.Unknown; break;
+                        }
+                        break;
+                    case AttrNumber: InstituteNumber = reader.Value; break;
+                    case AttrBankname: InstituteName = reader.Value; break;
+                    case AttrInitial: InitialAmount = XmlConvert.ToDouble(reader.Value); break;
+                    case AttrMinimum: MinimumAmount = XmlConvert.ToDouble(reader.Value); break;
+                }
+            }
+        }
+
+        public override string ToString() {
+            return String.Format(
+                "Account: " + Environment.NewLine + 
+                "\tKey: {0}" + Environment.NewLine + 
+                "\tName: {1}" + Environment.NewLine + 
+                "\tFlags: {2}" + Environment.NewLine + 
+                "\tPosition: {3}" + Environment.NewLine + 
+                "\tType: {4}" + Environment.NewLine + 
+                "\tInstituteNumber: {5}" + Environment.NewLine + 
+                "\tInstituteName: {6}" + Environment.NewLine + 
+                "\tInitialAmount: {7}" + Environment.NewLine + 
+                "\tMinimumAmount: {8}" + Environment.NewLine, 
+                Key, Name, Flags, Position, Type.ToString(), InstituteNumber, 
+                InstituteName, InitialAmount, MinimumAmount
+            );
+        }
+    }
+
+    public enum eAccountType {
+        Unknown,
+        Institute = 1,
+        Cash = 2,
+        Assets = 3,
+        CreditCard = 4,
+        Liabilities = 5
     }
 
     public class HBPayee {
