@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using CsvHelper;
 using FinTransConverterLib.FinanceEntities;
+using FinTransConverterLib.FinanceEntities.Homebank;
 using FinTransConverterLib.Helpers;
 
 namespace FinTransConverterLib.Transactions {
@@ -94,7 +95,7 @@ namespace FinTransConverterLib.Transactions {
             switch(feFrom.EntityType) {
                 case eFinanceEntityType.CheckAccount: 
                     break;
-                case eFinanceEntityType.DebitAccount: break;
+                case eFinanceEntityType.DepositAccount: break;
                 case eFinanceEntityType.CreditCardAccount: pType = ePaymodeType.CreditCard; break;
                 case eFinanceEntityType.Unknown: 
                 default: break;
@@ -102,6 +103,20 @@ namespace FinTransConverterLib.Transactions {
 
             return pType;
         }
+        
+        public static readonly Dictionary<ePaymodeType, List<string>> PaymodeMatchingPatterns = new Dictionary<ePaymodeType, List<string>>() {
+            { ePaymodeType.CreditCard, new List<string>() { } },
+            { ePaymodeType.Check, new List<string>() { } },
+            { ePaymodeType.Cash, new List<string>() { "Bankomat" } }, 
+            { ePaymodeType.Transfer, new List<string>() { "SEPA.*Gutschrift", "SEPA.*Zahlung.*IENT" } }, 
+            { ePaymodeType.BetweenAccounts, new List<string>() { } }, 
+            { ePaymodeType.DebitCard, new List<string>() { "POS", "SB.*Quick.*Laden", "POS.*Int.*Zahl.*Auftrag", "POS.*Zahlungsauftrag" } }, 
+            { ePaymodeType.StandingOrder, new List<string>() { "Dauerauftrag" } }, 
+            { ePaymodeType.ElectronicPayment, new List<string>() { } }, 
+            { ePaymodeType.Deposit, new List<string>() { "Gutschrift" } }, 
+            { ePaymodeType.FiFee, new List<string>() { "Abschluss", "Autom.*Verst.*ndigung", "Verst.*ndigung" } }, 
+            { ePaymodeType.Debit, new List<string>() { "SEPA.*Lastschrift" } }
+        };
         /*
         Unknown,
         CreditCard = 1,
@@ -109,8 +124,8 @@ namespace FinTransConverterLib.Transactions {
         Cash = 3,
         Transfer = 4,
         BetweenAccounts = 5,
-        DirectDebitAuthorityCard = 6,
-        AutomaticBillPayment = 7,
+        DebitCard = 6,
+        StandingOrder = 7,
         ElectronicPayment = 8,
         Deposit = 9,
         FiFee = 10, 
@@ -159,24 +174,23 @@ namespace FinTransConverterLib.Transactions {
 
         public override string ToString() {
             return String.Format(
-                "HomeBankTransaction: " + Environment.NewLine + 
-                "\tDate: {0}" + Environment.NewLine + 
-                "\tAmount: {1}" + Environment.NewLine + 
-                "\tPaymode: {2}" + Environment.NewLine + 
-                "\tMemo: {3}" + Environment.NewLine + 
-                "\tInfo: {4}" + Environment.NewLine + 
-                "\tTags: {5}" + Environment.NewLine + 
-                "\tPayee: " + Environment.NewLine + "{6}" + Environment.NewLine + 
-                "\tCategory: " + Environment.NewLine + "{7}" + Environment.NewLine + 
-                "\tAccount: " + Environment.NewLine + "{8}", 
+                "|-- Date: {0}" + Environment.NewLine + 
+                "|-- Amount: {1}" + Environment.NewLine + 
+                "|-- Paymode: {2}" + Environment.NewLine + 
+                "|-- Memo: {3}" + Environment.NewLine + 
+                "|-- Info: {4}" + Environment.NewLine + 
+                "|-- Tags: {5}" + Environment.NewLine + 
+                "|-+ Payee: " + Environment.NewLine + "{6}" + Environment.NewLine + 
+                "|-+ Category: " + Environment.NewLine + "{7}" + Environment.NewLine + 
+                "--+ Account: " + Environment.NewLine + "{8}", 
                 Date, Amount, Paymode.ToString(), Memo, Info, (new Func<string[], string>((tags) => { 
                     string str = "";
                     foreach(var tag in tags) str = String.Format("{0} {1}", str, tag);
                     return str;
                 }))(Tags),  
-                (Payee == null) ? "\t\tnull" : Payee.ToString().Indent("\t"), 
-                (Category == null) ? "\t\tnull" : Category.ToString().Indent("\t"), 
-                (Account == null) ? "\t\tnull" : Account.ToString().Indent("\t")
+                (Payee == null) ? "  --- null" : Payee.ToString().Indent("| "), 
+                (Category == null) ? "  --- null" : Category.ToString().Indent("| "), 
+                (Account == null) ? "  --- null" : Account.ToString().Indent("  ")
             );
         }
     }
@@ -201,8 +215,8 @@ public enum ePaymodeType {
     Cash = 3,
     Transfer = 4,
     BetweenAccounts = 5,
-    DirectDebitAuthorityCard = 6,
-    AutomaticBillPayment = 7,
+    DebitCard = 6,
+    StandingOrder = 7,
     ElectronicPayment = 8,
     Deposit = 9,
     FiFee = 10, 

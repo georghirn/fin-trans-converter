@@ -8,14 +8,17 @@ using FinTransConverterLib.Transactions;
 
 namespace FinTransConverterLib.FinanceEntities {
     public class HelloBank : FinanceEntity {
+        // supported read file types
+        private static readonly List<FileType> suppReadFileTypes = new List<FileType> { 
+            FinanceEntity.PossibleFileTypes[eFileTypes.Csv] 
+        };
+
+        // supported write file types
+        private static readonly List<FileType> suppWriteFileTypes = new List<FileType> { };
+
         private CultureInfo culture;
 
-        public HelloBank(eFinanceEntityType entityType, CultureInfo ci = null) 
-        : base(
-            new List<FileType>() { FinanceEntity.PossibleFileTypes[eFileTypes.Csv] }, // supported read file types
-            new List<FileType>() {}, // supported write file types
-            entityType
-        ) { 
+        public HelloBank(eFinanceEntityType entityType, CultureInfo ci = null) : base(suppReadFileTypes, suppWriteFileTypes) { 
             culture = ci ?? (ci = CultureInfo.InvariantCulture);
         }
 

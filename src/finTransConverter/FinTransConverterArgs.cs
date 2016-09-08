@@ -4,6 +4,7 @@ using System.ComponentModel;
 using DocoptNet;
 using FinTransConverterLib.Helpers;
 using FinTransConverterLib.FinanceEntities;
+using FinTransConverterLib.FinanceEntities.Homebank;
 
 namespace FinTransConverter {
    public class FinTransConverterArgs {
@@ -28,7 +29,10 @@ namespace FinTransConverter {
             "   -v, --version  Output version information and exit." + Environment.NewLine + 
             "   --homebankSettingsFile=HOMEBANKSETTINGS  Only valid when target conversion is a Hombank format." + Environment.NewLine + 
             "      Use this option to import a Homebank settings file (*.xhb). This will be parsed and used to" + Environment.NewLine + 
-            "      refine the conversion, e.g. for automatic transaction assignment." + Environment.NewLine;
+            "      refine the conversion, e.g. for automatic transaction assignment." + Environment.NewLine + 
+            "   --paymodePatternsFile=PAYMODEPATTERNS  Only valid when target conversion is a Homebank format." + Environment.NewLine + 
+            "      Use this option to import a paymode patterns file (*.xpmp). This will be parsed and used to" + Environment.NewLine + 
+            "      refine the conversion." + Environment.NewLine;
          _args = new Docopt().Apply(USAGE, argv, help, version, optionsFirst, exit);
          ConversionType = GetConversionType(_args["CONVERSIONTYPE"].ToString());
       }
@@ -44,6 +48,8 @@ namespace FinTransConverter {
       public bool OptVersion { get { return _args["--version"].IsTrue; } }
 
       public string HomebankSettingsFile { get { return _args["--homebankSettingsFile"].ToString(); } }
+
+      public string PaymodePatternsFile { get { return _args["--paymodePatternsFile"].ToString(); } }
 
       public eConversionType ConversionType {
          get { return _conversionType; }

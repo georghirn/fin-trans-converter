@@ -18,7 +18,8 @@ namespace FinTransConverterLib.FinanceEntities {
     public abstract class FinanceEntity : IFinanceEntity {
         protected static readonly Dictionary<eFileTypes, FileType> PossibleFileTypes = new Dictionary<eFileTypes, FileType>() {
             { eFileTypes.Csv, new FileType() { Id = eFileTypes.Csv, Extension = ".csv", Description = "comma seperated values" } }, 
-            { eFileTypes.Xhb, new FileType() { Id = eFileTypes.Xhb, Extension = ".xhb", Description = "Homebank xml settings file" } }
+            { eFileTypes.Xhb, new FileType() { Id = eFileTypes.Xhb, Extension = ".xhb", Description = "Homebank xml settings file" } }, 
+            { eFileTypes.PaymodePatterns, new FileType() { Id = eFileTypes.PaymodePatterns, Extension = ".xpmp", Description = "paymode patterns file" } }
         };
 
         public Dictionary<eFileTypes, FileType> SupportedReadFileTypes { get; private set; }
@@ -108,7 +109,8 @@ namespace FinTransConverterLib.FinanceEntities {
 
     public enum eFileTypes {
         Csv, 
-        Xhb
+        Xhb, 
+        PaymodePatterns
     }
 
     public enum eFinanceEntityType {
@@ -116,8 +118,8 @@ namespace FinTransConverterLib.FinanceEntities {
         Unknown,
         [Description("The source account type is a check account.")]
         CheckAccount, 
-        [Description("The source account type is a debit account.")]
-        DebitAccount, 
+        [Description("The source account type is a deposit account.")]
+        DepositAccount, 
         [Description("The source account type is a credit card account.")]
         CreditCardAccount
     }

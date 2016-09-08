@@ -34,7 +34,11 @@ namespace FinTransConverterLib.Helpers {
             var splitString = str.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
             
             foreach(var substring in splitString) {
-                target = String.Format("{0}{1}{2}" + Environment.NewLine, target, indent, substring);
+                if(target == "") {
+                    target = String.Format("{0}{1}{2}", target, indent, substring);
+                } else {
+                    target = String.Format("{0}" + Environment.NewLine + "{1}{2}", target, indent, substring);
+                }
             }
 
             return target;

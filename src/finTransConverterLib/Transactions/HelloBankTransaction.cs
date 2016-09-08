@@ -32,15 +32,15 @@ namespace FinTransConverterLib.Transactions {
         //public void 
         public override string ToString() {
             return String.Format(
-                "\t-> Iban = {0}" + Environment.NewLine + 
-                "\t-> ExtractionNumber = {1}" + Environment.NewLine + 
-                "\t-> AccountingDate = {2}" + Environment.NewLine + 
-                "\t-> ValutaDate = {3}" + Environment.NewLine + 
-                "\t-> PaymentReference = {4}" + Environment.NewLine + 
-                "\t-> Currency = {5}" + Environment.NewLine + 
-                "\t-> Amount = {6}" + Environment.NewLine + 
-                "\t-> AccountingText = {7}" + Environment.NewLine + 
-                "\t-> Memo = {8}" + Environment.NewLine, 
+                "|-- Iban = {0}" + Environment.NewLine + 
+                "|-- ExtractionNumber = {1}" + Environment.NewLine + 
+                "|-- AccountingDate = {2}" + Environment.NewLine + 
+                "|-- ValutaDate = {3}" + Environment.NewLine + 
+                "|-- PaymentReference = {4}" + Environment.NewLine + 
+                "|-- Currency = {5}" + Environment.NewLine + 
+                "|-- Amount = {6}" + Environment.NewLine + 
+                "|-- AccountingText = {7}" + Environment.NewLine + 
+                "--- Memo = {8}", 
                 Iban, ExtractionNumber, AccountingDate, ValutaDate, PaymentReference, 
                 Currency, Amount, AccountingText, Memo);
         }
