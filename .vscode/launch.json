@@ -9,10 +9,12 @@
          "program": "${workspaceRoot}/src/finTransConverter/bin/Debug/netcoreapp1.0/finTransConverter.dll",
          "args": [
              "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/umsaetze-girokonto_19250_65303084205_EUR_2016-08-20_17-33-14.csv", 
-             "outputfile", 
-             "HelloBankToHomebank", 
-             "--homebankSettingsFile=/home/georg/Dokumente/Finanzen/HomeBank/GeorgHirn_Finanzen.xhb",
-             "--paymodePatternsFile=/home/georg/Dokumente/Finanzen/HomeBank/hellobank_girokonto_paymode_patterns.xpmp"
+             "/home/georg/Dokumente/Finanzen/HomeBank/hellobank_girokonto_2016-08-20.csv", 
+             "HelloBankToHomebank",
+             //"-h",
+             "--account-type=CheckAccount",
+             "--homebank-settings-file=/home/georg/Dokumente/Finanzen/HomeBank/GeorgHirn_Finanzen.xhb",
+             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/HomeBank/hellobank_girokonto_paymode_patterns.xpmp"
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",
          "stopAtEntry": false,

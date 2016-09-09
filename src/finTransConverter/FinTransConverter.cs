@@ -1,22 +1,49 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Globalization;
 using FinTransConverterLib.FinanceEntities;
 using FinTransConverterLib.FinanceEntities.Homebank;
 using FinTransConverterLib.Helpers;
 
-namespace FinTransConverter
-{
-    public class FinTransConverter
-    {
-        public static void Main(string[] args)
-        {
+namespace FinTransConverter {
+    public class FinTransConverter {
+        public static void Main(string[] args) {
             var parsedArgs = new FinTransConverterArgs(args, exit: true);
-            //Transaction t = new Transaction();
-            HelloBank hellobank = new HelloBank(eFinanceEntityType.CheckAccount, new CultureInfo("de-at"));
-            HomeBank homebank = new HomeBank();
+            IFinanceEntity fromEntity;
+            IFinanceEntity toEntity;
 
-            Console.WriteLine("######################################################################################");
+            switch(parsedArgs.ConversionType) {
+                case eConversionType.HelloBankToHomebank:
+                    fromEntity = new HelloBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"));
+                    toEntity = new HomeBank(new CultureInfo("de-at"));
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        String.Format("The conversion type {0} is currently not supported.", 
+                        parsedArgs.ConversionType.ToString()));
+            }
+            
+            fromEntity.FileCheckAndReadIfSupported(eFileTypes.Csv, parsedArgs.SourceFile);
+            toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.HomebankSettingsFile);
+            toEntity.FileCheckAndReadIfSupported(eFileTypes.PaymodePatterns, parsedArgs.PaymodePatternsFile);
+            toEntity.Convert(fromEntity);
+            toEntity.WriteTo(parsedArgs.TargetFile);
+
+            Console.WriteLine("Converted transactions:");
+            foreach(var trans in toEntity.Transactions) {
+                if(toEntity.Transactions.LastOrDefault().Equals(trans)) {
+                    Console.WriteLine(String.Format(
+                        "--+ Transaction: " + Environment.NewLine + "{0}", trans.ToString().Indent("  ")));
+                } else {
+                    Console.WriteLine(String.Format(
+                        "|-+ Transaction: " + Environment.NewLine + "{0}" + Environment.NewLine + "|", 
+                        trans.ToString().Indent("| ")));
+                }
+            }
+            Console.WriteLine();
+
+            /*Console.WriteLine("######################################################################################");
             Console.WriteLine("######################################################################################");
             Console.WriteLine("Homebank:");
             homebank.ReadFrom(parsedArgs.HomebankSettingsFile);
@@ -110,9 +137,9 @@ namespace FinTransConverter
                         trans.ToString().Indent("| ")));
                 }
             }
-            Console.WriteLine();
+            Console.WriteLine();*/
 
-            Console.WriteLine("######################################################################################");
+            /*Console.WriteLine("######################################################################################");
             Console.WriteLine("######################################################################################");
             Console.WriteLine("######################################################################################");
             Console.WriteLine("######################################################################################");
@@ -131,7 +158,7 @@ namespace FinTransConverter
                         transaction.ToString().Indent("| ")));
                 }
             }
-            Console.WriteLine();
+            Console.WriteLine();*/
         }
     }
 }

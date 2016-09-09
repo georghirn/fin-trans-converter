@@ -25,13 +25,14 @@ namespace FinTransConverterLib.FinanceEntities {
         private void ParseCsv(TextReader input) {
             HelloBankTransaction transaction;
             
-            var reader = new CsvReader(input);
-            ConfigureCsv(reader.Configuration);
-            
-            while(reader.Read()) {
-                transaction = new HelloBankTransaction();
-                transaction.ParseCsv(reader, culture);
-                Transactions.Add(transaction);
+            using(var reader = new CsvReader(input)) {
+                ConfigureCsv(reader.Configuration);
+                
+                while(reader.Read()) {
+                    transaction = new HelloBankTransaction();
+                    transaction.ParseCsv(reader, culture);
+                    Transactions.Add(transaction);
+                }
             }
         }
 
@@ -41,8 +42,9 @@ namespace FinTransConverterLib.FinanceEntities {
             }
         }
 
-        protected override void Write(TextWriter output, FileType fileType) {
+        protected override bool Write(TextWriter output, FileType fileType) {
             // Nothing to do for now.
+            return true;
         }
 
         private void ConfigureCsv(CsvConfiguration config) {

@@ -8,11 +8,14 @@ using FinTransConverterLib.Transactions;
 namespace FinTransConverterLib.FinanceEntities {
     public interface IFinanceEntity {
         eFinanceEntityType EntityType { get; }
+        List<ITransaction> Transactions { get; }
 
         Dictionary<eFileTypes, FileType> SupportedReadFileTypes { get; }
         Dictionary<eFileTypes, FileType> SupportedWriteFileTypes { get; }
-        void ReadFrom(string fileName);
-        void WriteTo(string fileName);
+        void ReadFrom(string path);
+        void WriteTo(string path);
+        void Convert(IFinanceEntity finEntity);
+        void FileCheckAndReadIfSupported(eFileTypes fileType, string path);
     }
 
     public abstract class FinanceEntity : IFinanceEntity {
@@ -26,12 +29,12 @@ namespace FinTransConverterLib.FinanceEntities {
 
         public Dictionary<eFileTypes, FileType> SupportedWriteFileTypes { get; private set; }
 
-        public List<Transaction> Transactions { get; protected set; }
+        public List<ITransaction> Transactions { get; protected set; }
 
         public eFinanceEntityType EntityType { get; private set; }
 
         public FinanceEntity(List<FileType> suppReadFileTypes, List<FileType> suppWriteFileTypes, eFinanceEntityType entityType = eFinanceEntityType.Unknown) {
-            Transactions = new List<Transaction>();
+            Transactions = new List<ITransaction>();
             SupportedReadFileTypes = new Dictionary<eFileTypes, FileType>();
             SupportedWriteFileTypes = new Dictionary<eFileTypes, FileType>();
             EntityType = entityType;
@@ -40,8 +43,8 @@ namespace FinTransConverterLib.FinanceEntities {
             foreach(var fileType in suppWriteFileTypes) SupportedWriteFileTypes.Add(fileType.Id, fileType);
         }
 
-        public void ReadFrom(string fileName) {
-            var fileExt = Path.GetExtension(fileName);
+        public void ReadFrom(string path) {
+            var fileExt = Path.GetExtension(path);
             if(fileExt.Equals(String.Empty)) fileExt = PossibleFileTypes[eFileTypes.Csv].Extension;
             var fileType = SupportedReadFileTypes
                 .Where(i => i.Value.Extension == fileExt )
@@ -53,15 +56,15 @@ namespace FinTransConverterLib.FinanceEntities {
                     "The read file type \"{0}\" is not supported by this instance.", fileExt));
             }
 
-            using(StreamReader reader = File.OpenText(fileName)) {
+            using(StreamReader reader = File.OpenText(path)) {
                 Read(reader, fileType);
             }
         }
 
         protected abstract void Read(TextReader input, FileType fileType);
 
-        public void WriteTo(string fileName) {
-            var fileExt = Path.GetExtension(fileName);
+        public void WriteTo(string path) {
+            var fileExt = Path.GetExtension(path);
             if(fileExt.Equals(String.Empty)) fileExt = PossibleFileTypes[eFileTypes.Csv].Extension;
             var fileType = SupportedWriteFileTypes
                 .Where(i => i.Value.Extension == fileExt )
@@ -73,12 +76,28 @@ namespace FinTransConverterLib.FinanceEntities {
                     "The write file type \"{0}\" is not supported by this instance.", fileExt));
             }
 
-            using(StreamWriter writer = new StreamWriter(File.OpenWrite(fileName))) {
-                Write(writer, fileType);
+            using(StreamWriter writer = new StreamWriter(File.OpenWrite(path))) {
+                if(Write(writer, fileType) == false) WriteFailed(path);
             }
         }
 
-        protected abstract void Write(TextWriter output, FileType fileType);
+        protected abstract bool Write(TextWriter output, FileType fileType);
+
+        protected virtual void WriteFailed(string path) {
+            // Nothing to do.
+        }
+
+        public virtual void Convert(IFinanceEntity finEntity){
+            throw new NotSupportedException("The given finance entity type is not supported.");
+        }
+
+        public void FileCheckAndReadIfSupported(eFileTypes fileType, string path) {
+            if(File.Exists(path)) {
+                if(SupportedReadFileTypes.ContainsKey(fileType)) {
+                    ReadFrom(path);
+                }
+            }
+        }
     }
 
     public class FileType : IEquatable<FileType> {

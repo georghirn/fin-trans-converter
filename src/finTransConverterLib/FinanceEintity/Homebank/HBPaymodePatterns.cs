@@ -44,7 +44,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     }
                 }
                 
-                Patterns.OrderBy(i => i.Level);
+                Patterns = Patterns.OrderBy(i => i.Level).ToList();
             }
         }
 
@@ -116,5 +116,20 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                 Level, AccountingTextPattern, MemoPattern
             );
         }
+    }
+
+    public enum ePaymodeType {
+        Unknown,
+        CreditCard = 1,
+        Check = 2,
+        Cash = 3,
+        Transfer = 4,
+        BetweenAccounts = 5,
+        DebitCard = 6,
+        StandingOrder = 7,
+        ElectronicPayment = 8,
+        Deposit = 9,
+        FiFee = 10, 
+        Debit = 11
     }
 }

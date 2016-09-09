@@ -27,14 +27,28 @@ namespace FinTransConverter {
             "OPTIONS:" + Environment.NewLine + 
             "   -h, --help     Display this help and exit." + Environment.NewLine + 
             "   -v, --version  Output version information and exit." + Environment.NewLine + 
-            "   --homebankSettingsFile=HOMEBANKSETTINGS  Only valid when target conversion is a Hombank format." + Environment.NewLine + 
+            "   --homebank-settings-file=HOMEBANKSETTINGS  Only valid when target conversion is a Hombank format." + Environment.NewLine + 
             "      Use this option to import a Homebank settings file (*.xhb). This will be parsed and used to" + Environment.NewLine + 
             "      refine the conversion, e.g. for automatic transaction assignment." + Environment.NewLine + 
-            "   --paymodePatternsFile=PAYMODEPATTERNS  Only valid when target conversion is a Homebank format." + Environment.NewLine + 
+            "   --paymode-patterns-file=PAYMODEPATTERNS  Only valid when target conversion is a Homebank format." + Environment.NewLine + 
             "      Use this option to import a paymode patterns file (*.xpmp). This will be parsed and used to" + Environment.NewLine + 
-            "      refine the conversion." + Environment.NewLine;
+            "      refine the conversion." + Environment.NewLine + 
+            "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
+            "      the following types are supported:" + Environment.NewLine + 
+            GetFinanceEntityTypesDescription() + Environment.NewLine;
          _args = new Docopt().Apply(USAGE, argv, help, version, optionsFirst, exit);
-         ConversionType = GetConversionType(_args["CONVERSIONTYPE"].ToString());
+
+         try {
+            ConversionType = _args["CONVERSIONTYPE"].ToString().ToEnum<eConversionType>();
+         } catch(KeyNotFoundException ex) {
+             throw new DocoptInputErrorException(String.Format("Invalid conversion type - {0}", ex.Message));
+         }
+
+         try {
+            FinanceEntity = _args["--account-type"].ToString().ToEnum<eFinanceEntityType>();
+         } catch(KeyNotFoundException ex) {
+             throw new DocoptInputErrorException(String.Format("Invalid account type - {0}", ex.Message));
+         }
       }
 
       public IDictionary<string, DocoptNet.ValueObject> Args { get { return _args; } }
@@ -47,9 +61,11 @@ namespace FinTransConverter {
       
       public bool OptVersion { get { return _args["--version"].IsTrue; } }
 
-      public string HomebankSettingsFile { get { return _args["--homebankSettingsFile"].ToString(); } }
+      public string HomebankSettingsFile { get { return _args["--homebank-settings-file"].ToString(); } }
 
-      public string PaymodePatternsFile { get { return _args["--paymodePatternsFile"].ToString(); } }
+      public string PaymodePatternsFile { get { return _args["--paymode-patterns-file"].ToString(); } }
+
+      public eFinanceEntityType FinanceEntity { get; private set; }
 
       public eConversionType ConversionType {
          get { return _conversionType; }
@@ -66,18 +82,22 @@ namespace FinTransConverter {
 
          foreach(var item in Util.GetEnumValues<eConversionType>()) {
             descr = item.GetAttribute<DescriptionAttribute>();
-            str = String.Format("      (*) {0}{1} - {2}" + Environment.NewLine, str, item, descr.Description);
+            str = String.Format("{0}      (*) {1} - {2}" + Environment.NewLine, str, item, descr.Description);
          }
 
          return str;
       }
 
-      private eConversionType GetConversionType(string convTypeString) {
-         foreach(var enumItem in Util.GetEnumValues<eConversionType>()) {
-            if(convTypeString.Equals(enumItem.ToString())) return enumItem;
-         }
+      private string GetFinanceEntityTypesDescription() {
+          string str = "";
+          DescriptionAttribute descr;
 
-         throw new DocoptInputErrorException("Invalid conversion type.");
+          foreach(var item in Util.GetEnumValues<eFinanceEntityType>()) {
+              descr = item.GetAttribute<DescriptionAttribute>();
+              str = String.Format("{0}      (*) {1} - {2}" + Environment.NewLine, str, item, descr.Description);
+          }
+
+          return str;
       }
    }
 }

@@ -28,22 +28,30 @@ namespace FinTransConverterLib.Helpers {
       }
    }
 
-    public static class StringExtensions {
-        public static String Indent(this String str, string indent) {
-            string target = "";
-            var splitString = str.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-            
-            foreach(var substring in splitString) {
-                if(target == "") {
-                    target = String.Format("{0}{1}{2}", target, indent, substring);
-                } else {
-                    target = String.Format("{0}" + Environment.NewLine + "{1}{2}", target, indent, substring);
-                }
-            }
+   public static class StringExtensions {
+      public static String Indent(this String str, string indent) {
+         string target = "";
+         var splitString = str.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+         
+         foreach(var substring in splitString) {
+               if(target == "") {
+                  target = String.Format("{0}{1}{2}", target, indent, substring);
+               } else {
+                  target = String.Format("{0}" + Environment.NewLine + "{1}{2}", target, indent, substring);
+               }
+         }
 
-            return target;
-        }
-    }
+         return target;
+      }
+
+      public static enumType ToEnum<enumType>(this String str) {
+         foreach(var enumItem in Util.GetEnumValues<enumType>()) {
+            if(str.Equals(enumItem.ToString())) return enumItem;
+         }
+
+         throw new KeyNotFoundException("The string does not match with an enum value.");
+      }
+   }
 
     public static class DateTimeExtensions {
         public const double JulianUnixZero = 719163;

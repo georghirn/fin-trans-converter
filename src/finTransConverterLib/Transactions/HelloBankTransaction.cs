@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using CsvHelper;
 using FinTransConverterLib.FinanceEntities;
@@ -45,20 +46,28 @@ namespace FinTransConverterLib.Transactions {
                 Currency, Amount, AccountingText, Memo);
         }
 
-        public override bool IsDuplicate(ITransaction t) {
-            var trans = t as HelloBankTransaction;
-            if(trans == null) return false;
+        public override bool IsDuplicate(IEnumerable<ITransaction> transactions) {
+            if(transactions == null) throw new ArgumentNullException("transactions");
+            bool isDuplicate = false;
 
-            return AccountingDate.Equals(trans.AccountingDate) && 
-                ValutaDate.Equals(trans.ValutaDate) && 
-                PaymentReference.Equals(trans.PaymentReference) && 
-                Currency.Equals(trans.Currency) && 
-                Amount.Equals(trans.Amount) && 
-                AccountingText.Equals(trans.AccountingText) && 
-                Memo.Equals(trans.Memo);
+            foreach(var transaction in transactions) {
+                var trans = transaction as HelloBankTransaction;
+                
+                isDuplicate = AccountingDate.Equals(trans.AccountingDate) && 
+                    ValutaDate.Equals(trans.ValutaDate) && 
+                    PaymentReference.Equals(trans.PaymentReference) && 
+                    Currency.Equals(trans.Currency) && 
+                    Amount.Equals(trans.Amount) && 
+                    AccountingText.Equals(trans.AccountingText) && 
+                    Memo.Equals(trans.Memo);
+                
+                if(isDuplicate) break;
+            }
+            
+            return isDuplicate;
         }
 
-        public override void ConvertTransaction(ITransaction t, FinanceEntity feFrom = null, FinanceEntity feTo = null) {
+        public override void ConvertTransaction(ITransaction t, IFinanceEntity feFrom = null, IFinanceEntity feTo = null) {
             base.ConvertTransaction(t, feFrom, feTo); // Currently no conversion supported by this class.
         }
     }

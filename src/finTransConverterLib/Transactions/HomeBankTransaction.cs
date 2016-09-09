@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -35,17 +36,33 @@ namespace FinTransConverterLib.Transactions {
         public string Info { get; private set; }
         public string[] Tags { get; private set; }
 
-        public override bool IsDuplicate(ITransaction t) {
-            var trans = t as HomeBankTransaction;
-            if(trans == null) return false;
+        public override bool IsDuplicate(IEnumerable<ITransaction> transactions) {
+            if(transactions == null) throw new ArgumentNullException("transactions");
+            bool isDuplicate = false;
 
-            return Date.Equals(trans.Date) && 
-                Amount.Equals(trans.Amount) && 
-                Memo.Equals(trans.Memo) && 
-                Info.Equals(trans.Info);
+            foreach(var transaction in transactions) {
+                var trans = transaction as HomeBankTransaction;
+
+                isDuplicate = Date.Date.Equals(trans.Date.Date);
+                isDuplicate &= Amount.Equals(trans.Amount);
+                isDuplicate &= Memo.Equals(trans.Memo);
+                isDuplicate &= Info.Equals(trans.Info);
+                
+                /*if(Date.Date.Equals(trans.Date.Date)) {
+                    Console.WriteLine("Date EQU / Amount {0} / Memo {1} / Info {2} / IsDuplicate: {3}", 
+                    Amount.Equals(trans.Amount) ? "EQU" : "NOT", 
+                    Memo.Equals(trans.Memo) ? "EQU" : "NOT", 
+                    Info.Equals(trans.Info) ? "EQU" : "NOT", 
+                    isDuplicate ? "true" : "false");
+                }*/
+
+                if(isDuplicate) break;
+            }
+            
+            return isDuplicate;
         }
 
-        public override void ConvertTransaction(ITransaction t, FinanceEntity feFrom = null, FinanceEntity feTo = null) {
+        public override void ConvertTransaction(ITransaction t, IFinanceEntity feFrom = null, IFinanceEntity feTo = null) {
             if(t is HelloBankTransaction) {
                 var trans = t as HelloBankTransaction;
                 var helloBank = feFrom as HelloBank;
@@ -53,7 +70,6 @@ namespace FinTransConverterLib.Transactions {
 
                 Date = trans.ValutaDate;
                 Amount = trans.Amount;
-                //Paymode
 
                 var assignment = TryResolveAssignment(trans.Memo, hb);
                 if(assignment != null) {
@@ -65,6 +81,7 @@ namespace FinTransConverterLib.Transactions {
 
                 Memo = (trans.PaymentReference.Length > 0) ? String.Format("[Ref: {0}] {1}", trans.PaymentReference, trans.Memo) : trans.Memo;
                 Info = trans.AccountingText;
+                Paymode = TryFindPaymode(feFrom, hb); // Memo and Info have to be set before.
 
                 //Tags
 
@@ -88,49 +105,31 @@ namespace FinTransConverterLib.Transactions {
                 return (new Regex(pattern)).Match(searchText).Success;
             });
         }
-
-        private ePaymodeType TryFindPaymode(FinanceEntity feFrom) {
+        
+        private ePaymodeType TryFindPaymode(IFinanceEntity feFrom, HomeBank hb) {
             ePaymodeType pType = ePaymodeType.Unknown;
 
             switch(feFrom.EntityType) {
-                case eFinanceEntityType.CheckAccount: 
-                    break;
-                case eFinanceEntityType.DepositAccount: break;
                 case eFinanceEntityType.CreditCardAccount: pType = ePaymodeType.CreditCard; break;
+                case eFinanceEntityType.CheckAccount: 
+                case eFinanceEntityType.DepositAccount: 
                 case eFinanceEntityType.Unknown: 
-                default: break;
+                default: 
+                    pType = hb?.PaymodePatterns
+                        .Where(pt => pt.Patterns.Where(p => {
+                            bool isMatch = true;
+                            isMatch &= (new Regex(p.AccountingTextPattern, RegexOptions.IgnoreCase)).Match(Info).Success;
+                            if(p.Level == 1) isMatch &= (new Regex(p.MemoPattern, RegexOptions.IgnoreCase)).Match(Memo).Success;
+                            return isMatch;
+                        }).Count() > 0)
+                        .Select(pt => pt.Paymode)
+                        .FirstOrDefault() ?? ePaymodeType.Unknown;
+                    break;
             }
 
             return pType;
         }
         
-        public static readonly Dictionary<ePaymodeType, List<string>> PaymodeMatchingPatterns = new Dictionary<ePaymodeType, List<string>>() {
-            { ePaymodeType.CreditCard, new List<string>() { } },
-            { ePaymodeType.Check, new List<string>() { } },
-            { ePaymodeType.Cash, new List<string>() { "Bankomat" } }, 
-            { ePaymodeType.Transfer, new List<string>() { "SEPA.*Gutschrift", "SEPA.*Zahlung.*IENT" } }, 
-            { ePaymodeType.BetweenAccounts, new List<string>() { } }, 
-            { ePaymodeType.DebitCard, new List<string>() { "POS", "SB.*Quick.*Laden", "POS.*Int.*Zahl.*Auftrag", "POS.*Zahlungsauftrag" } }, 
-            { ePaymodeType.StandingOrder, new List<string>() { "Dauerauftrag" } }, 
-            { ePaymodeType.ElectronicPayment, new List<string>() { } }, 
-            { ePaymodeType.Deposit, new List<string>() { "Gutschrift" } }, 
-            { ePaymodeType.FiFee, new List<string>() { "Abschluss", "Autom.*Verst.*ndigung", "Verst.*ndigung" } }, 
-            { ePaymodeType.Debit, new List<string>() { "SEPA.*Lastschrift" } }
-        };
-        /*
-        Unknown,
-        CreditCard = 1,
-        Check = 2,
-        Cash = 3,
-        Transfer = 4,
-        BetweenAccounts = 5,
-        DebitCard = 6,
-        StandingOrder = 7,
-        ElectronicPayment = 8,
-        Deposit = 9,
-        FiFee = 10, 
-        Debit = 11
-        */
         public void ParseXmlElement(XmlReader reader, HomeBank hba) {
             while (reader.MoveToNextAttribute()) {
                 switch (reader.Name) {
@@ -172,6 +171,29 @@ namespace FinTransConverterLib.Transactions {
             }
         }
 
+        public static void WriteCsvHeader(CsvWriter writer) {
+            writer.WriteField("date");
+            writer.WriteField("paymode");
+            writer.WriteField("info");
+            writer.WriteField("payee");
+            writer.WriteField("memo");
+            writer.WriteField("amount");
+            writer.WriteField("category");
+            writer.WriteField("tags");
+        }
+
+        public void WriteCsv(CsvWriter writer, CultureInfo culture) {
+            writer.WriteField(Date.ToString("dd-MM-yy"));
+            writer.WriteField((int)Paymode);
+            writer.WriteField(Info);
+            writer.WriteField(Payee?.Name ?? "");
+            writer.WriteField(Memo);
+            writer.WriteField(Amount);
+            writer.WriteField((Category == null) ? "" : 
+                (Category.IsSubcategory) ? String.Format("{0}:{1}", Category.Parent.Name, Category.Name) : Category.Name);
+            writer.WriteField((Tags != null && Tags.Length > 0) ? String.Join(" ", Tags) : "");
+        }
+
         public override string ToString() {
             return String.Format(
                 "|-- Date: {0}" + Environment.NewLine + 
@@ -185,7 +207,7 @@ namespace FinTransConverterLib.Transactions {
                 "--+ Account: " + Environment.NewLine + "{8}", 
                 Date, Amount, Paymode.ToString(), Memo, Info, (new Func<string[], string>((tags) => { 
                     string str = "";
-                    foreach(var tag in tags) str = String.Format("{0} {1}", str, tag);
+                    if(tags != null) foreach(var tag in tags) str = String.Format("{0} {1}", str, tag);
                     return str;
                 }))(Tags),  
                 (Payee == null) ? "  --- null" : Payee.ToString().Indent("| "), 
@@ -194,31 +216,4 @@ namespace FinTransConverterLib.Transactions {
             );
         }
     }
-}
-
-/*
-<ope date="736198" amount="10.18" account="1" paymode="11" st="1" flags="2" payee="2" category="67" wording="Test Buchung" info="test info" tags="bla tag urlpfrumpft" />
-date	format must be DD-MM-YY
-amount	a number with a '.' or ',' as decimal separator, ex: -24.12 or 36,75
-paymode	from 0=none to 10=FI fee
-payee	a payee name
-category	a full category name (category, or category:subcategory)
-memo(wording)	a string
-info	a string
-tags	tags separated by space, tag is mandatory since v4.5
-*/
-
-public enum ePaymodeType {
-    Unknown,
-    CreditCard = 1,
-    Check = 2,
-    Cash = 3,
-    Transfer = 4,
-    BetweenAccounts = 5,
-    DebitCard = 6,
-    StandingOrder = 7,
-    ElectronicPayment = 8,
-    Deposit = 9,
-    FiFee = 10, 
-    Debit = 11
 }
