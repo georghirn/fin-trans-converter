@@ -1,5 +1,6 @@
 {
-  "version": "1.0.0-*",
+  "name": "FinTransConverter",
+  "version": "0.0.1-*",
   "buildOptions": {
     "debugType": "portable",
     "emitEntryPoint": true
