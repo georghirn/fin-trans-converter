@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Globalization;
 using FinTransConverterLib.FinanceEntities;
@@ -13,35 +12,65 @@ namespace FinTransConverter {
             IFinanceEntity fromEntity;
             IFinanceEntity toEntity;
 
-            switch(parsedArgs.ConversionType) {
-                case eConversionType.HelloBankToHomebank:
-                    fromEntity = new HelloBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"));
-                    toEntity = new HomeBank(new CultureInfo("de-at"));
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        String.Format("The conversion type {0} is currently not supported.", 
-                        parsedArgs.ConversionType.ToString()));
+            if(parsedArgs.OptVersion) {
+                Console.WriteLine("Version option not implemented for now.");
+                Environment.Exit(1);
             }
-            
-            fromEntity.FileCheckAndReadIfSupported(eFileTypes.Csv, parsedArgs.SourceFile);
-            toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.HomebankSettingsFile);
-            toEntity.FileCheckAndReadIfSupported(eFileTypes.PaymodePatterns, parsedArgs.PaymodePatternsFile);
-            toEntity.Convert(fromEntity);
-            toEntity.WriteTo(parsedArgs.TargetFile);
 
-            Console.WriteLine("Converted transactions:");
-            foreach(var trans in toEntity.Transactions) {
-                if(toEntity.Transactions.LastOrDefault().Equals(trans)) {
-                    Console.WriteLine(String.Format(
-                        "--+ Transaction: " + Environment.NewLine + "{0}", trans.ToString().Indent("  ")));
-                } else {
-                    Console.WriteLine(String.Format(
-                        "|-+ Transaction: " + Environment.NewLine + "{0}" + Environment.NewLine + "|", 
-                        trans.ToString().Indent("| ")));
+            Console.WriteLine("Start conversion with the following settings:");
+            parsedArgs.PrintChosenSettings();
+
+            try {
+                switch(parsedArgs.ConversionType) {
+                    case eConversionType.HelloBankToHomebank:
+                        fromEntity = new HelloBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"));
+                        toEntity = new HomeBank(new CultureInfo("de-at"));
+                        break;
+                    default:
+                        throw new NotSupportedException(
+                            String.Format("The conversion type {0} is currently not supported.", 
+                            parsedArgs.ConversionType.ToString()));
                 }
+                
+                fromEntity.FileCheckAndReadIfSupported(eFileTypes.Csv, parsedArgs.SourceFile);
+                Console.WriteLine("Successfully parsed source file.");
+
+                if(parsedArgs.HomebankSettingsFile != string.Empty) {
+                    toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.HomebankSettingsFile);
+                    Console.WriteLine("Homebank settings file successfully parsed.");
+                }
+
+                if(parsedArgs.PaymodePatternsFile != string.Empty) {
+                    toEntity.FileCheckAndReadIfSupported(eFileTypes.PaymodePatterns, parsedArgs.PaymodePatternsFile);
+                    Console.WriteLine("Paymode patterns file successfully parsed.");
+                }
+
+                toEntity.Convert(fromEntity);
+                Console.WriteLine("Successfully performed conversion.");
+                toEntity.WriteTo(parsedArgs.TargetFile);
+                Console.WriteLine("Results written to the target file successfully.");
+
+                if(parsedArgs.OptVerbose) {
+                    Console.WriteLine("Converted transactions:");
+                    foreach(var trans in toEntity.Transactions) {
+                        if(toEntity.Transactions.LastOrDefault().Equals(trans)) {
+                            Console.WriteLine(String.Format(
+                                "--+ Transaction: " + Environment.NewLine + "{0}", trans.ToString().Indent("  ")));
+                        } else {
+                            Console.WriteLine(String.Format(
+                                "|-+ Transaction: " + Environment.NewLine + "{0}" + Environment.NewLine + "|", 
+                                trans.ToString().Indent("| ")));
+                        }
+                    }
+                    Console.WriteLine();
+                }
+
+                Console.WriteLine("Finished");
+            } catch(Exception ex) {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Failed");
+                Environment.Exit(1);
             }
-            Console.WriteLine();
 
             /*Console.WriteLine("######################################################################################");
             Console.WriteLine("######################################################################################");
@@ -159,6 +188,8 @@ namespace FinTransConverter {
                 }
             }
             Console.WriteLine();*/
+
+            Environment.Exit(0);
         }
     }
 }

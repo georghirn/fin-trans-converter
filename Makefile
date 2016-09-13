@@ -1,3 +1,5 @@
+CONFIG=Release
+
 all: build
 
 clean:
@@ -8,14 +10,14 @@ clean:
 
 build:
 	dotnet restore
-	dotnet build -c Release src/finTransConverterLib/project.json
-	dotnet build -c Release src/finTransConverter/project.json
+	dotnet build -c $(CONFIG) src/finTransConverterLib/project.json
+	dotnet build -c $(CONFIG) src/finTransConverter/project.json
 
 rebuild: clean build
 
 install:
 	mkdir -p $(DESTDIR)/usr/lib/fin-trans-converter
-	install -D ./src/finTransConverter/bin/Release/netcoreapp1.0/FinTransConverter* $(DESTDIR)/usr/lib/fin-trans-converter
+	install -D ./src/finTransConverter/bin/$(CONFIG)/netcoreapp1.0/FinTransConverter* $(DESTDIR)/usr/lib/fin-trans-converter
 	mkdir -p $(DESTDIR)/usr/bin
 	install ./scripts/fin-trans-converter $(DESTDIR)/usr/bin
 

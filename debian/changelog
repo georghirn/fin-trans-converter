@@ -1,3 +1,11 @@
+fin-trans-converter (0.0.1-1ubuntu1~1.gbp25ce3c) UNRELEASED; urgency=medium
+
+  ** SNAPSHOT build @25ce3c924304ef0784c86b1ed86f2d9940454afd **
+
+  * UNRELEASED
+
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Tue, 13 Sep 2016 22:30:27 +0200
+
 fin-trans-converter (0.0.1-1) xenial; urgency=medium
 
   * Initial release

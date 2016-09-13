@@ -53,7 +53,7 @@ namespace FinTransConverterLib.FinanceEntities {
 
             if(EqualityComparer<FileType>.Default.Equals(fileType, default(FileType))) {
                 throw new NotSupportedException(String.Format(
-                    "The read file type \"{0}\" is not supported by this instance.", fileExt));
+                    "The read file type \"{0}\" is not supported by the {1} instance.", fileExt, this.GetType().Name));
             }
 
             using(StreamReader reader = File.OpenText(path)) {
@@ -73,7 +73,7 @@ namespace FinTransConverterLib.FinanceEntities {
 
             if(EqualityComparer<FileType>.Default.Equals(fileType, default(FileType))) {
                 throw new NotSupportedException(String.Format(
-                    "The write file type \"{0}\" is not supported by this instance.", fileExt));
+                    "The write file type \"{0}\" is not supported by the {1} instance.", fileExt, this.GetType().Name));
             }
 
             using(StreamWriter writer = new StreamWriter(File.OpenWrite(path))) {
@@ -88,14 +88,20 @@ namespace FinTransConverterLib.FinanceEntities {
         }
 
         public virtual void Convert(IFinanceEntity finEntity){
-            throw new NotSupportedException("The given finance entity type is not supported.");
+            throw new NotSupportedException(
+                String.Format("The finance entity type \"{0}\" is not supported.", finEntity.GetType().Name));
         }
-
         public void FileCheckAndReadIfSupported(eFileTypes fileType, string path) {
             if(File.Exists(path)) {
                 if(SupportedReadFileTypes.ContainsKey(fileType)) {
                     ReadFrom(path);
+                } else {
+                    throw new NotSupportedException(
+                        String.Format("The read file type \"{0}\" is not supported by the {1} instance.", 
+                        fileType.ToString(), this.GetType().Name));
                 }
+            } else {
+                throw new FileNotFoundException(String.Format("File does not exist: {0}", path), path);
             }
         }
     }
