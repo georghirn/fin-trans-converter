@@ -11,6 +11,7 @@ using FinTransConverterLib.Helpers;
 
 namespace FinTransConverterLib.Transactions {
     public class HomeBankTransaction : Transaction {
+        public const uint XmlPosition = 8;
         public const string XmlTagName = "ope";
         public const string XmlAttrDate = "date";
         public const string XmlAttrAmount = "amount";
@@ -31,6 +32,9 @@ namespace FinTransConverterLib.Transactions {
         
         public HomeBankTransaction() { 
             SplitTransactions = new List<SplitTransaction>();
+            StrongLinkId = -1;
+            Flags = 0;
+            DestinationAccount = null;
         }
 
         public DateTime Date { get; private set; }
@@ -82,6 +86,10 @@ namespace FinTransConverterLib.Transactions {
 
                 Date = trans.ValutaDate;
                 Amount = trans.Amount;
+                if(Amount >= 0) Flags |= (int)eTransactionFlags.Income;
+
+                Account = hb.TargetAccount;
+                Status = (trans.ValutaDate.Equals(default(DateTime))) ? eTransactionStatus.Cleared : eTransactionStatus.Reconciled;
 
                 var assignment = TryResolveAssignment(trans.Memo, hb);
                 if(assignment != null) {
@@ -89,13 +97,35 @@ namespace FinTransConverterLib.Transactions {
                     Category = assignment.Category;
                 }
 
-                //Account
-
                 Memo = (trans.PaymentReference.Length > 0) ? String.Format("[Ref: {0}] {1}", trans.PaymentReference, trans.Memo) : trans.Memo;
                 Info = trans.AccountingText;
-                Paymode = TryFindPaymode(feFrom, hb); // Memo and Info have to be set before.
+                
+                // Parse paymode infos from paymode patterns file.
+                var pmInfo = TryFindPaymode(feFrom, hb); // Memo and Info have to be set before.
+                Paymode = pmInfo.Paymode;
 
-                //Tags
+                // Check if paymode type is between accounts and if so do some further processing.
+                if(Paymode == ePaymodeType.BetweenAccounts) {
+                    StrongLinkId = ++hb.MaxStrongLinkId;
+                    Flags |= (int)eTransactionFlags.Split;
+
+                    // Try to find destination account.
+                    if(pmInfo.DestinationAccountPattern != null) {
+                        DestinationAccount = hb.Accounts.Where((a) => {
+                            return (new Regex(pmInfo.DestinationAccountPattern)).Match(a.Name).Success;
+                        }).FirstOrDefault();
+                    }
+                }
+
+                // Save tags and check if there are new one.
+                Tags = pmInfo.TagsString.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                List<string> newTagsNames = Tags.Where(tag => hb.Tags.Any(hbTag => hbTag.Name.Equals(tag)) == false).ToList();
+                if(newTagsNames.Count() > 0) {
+                    var maxKey = hb.Tags.Max(tag => tag.Key);
+                    foreach(var newTagName in newTagsNames) hb.Tags.Add(new HBTag(key: ++maxKey, name: newTagName));
+                }
+
+                // Not supported for now: scat, samt, smem (split transactions)
 
                 return;
             }
@@ -104,6 +134,7 @@ namespace FinTransConverterLib.Transactions {
             base.ConvertTransaction(t, feFrom, feTo);
         }
         /*
+
         <account key="1" pos="1" type="1" name="Girokonto Hello Bank" bankname="Hello Bank" initial="0" minimum="-3000" />
         <account key="6" flags="64" pos="6" type="5" name="[type] liabilities / [not in reports]" number="[institute number]" 
                  bankname="[institute name]" initial="0.080000000000000002" minimum="0.040000000000000001" />
@@ -165,8 +196,16 @@ namespace FinTransConverterLib.Transactions {
             });
         }
         
-        private ePaymodeType TryFindPaymode(IFinanceEntity feFrom, HomeBank hb) {
+        private class ParsedPaymodeInfo {
+            public ePaymodeType Paymode { get; set; }
+            public string DestinationAccountPattern { get; set; }
+            public string TagsString { get; set; }
+        }
+
+        private ParsedPaymodeInfo TryFindPaymode(IFinanceEntity feFrom, HomeBank hb) {
             ePaymodeType pType = ePaymodeType.Unknown;
+            string destAccPattern = null;
+            string tagsStr = null;
 
             switch(feFrom.EntityType) {
                 case eFinanceEntityType.CreditCardAccount: pType = ePaymodeType.CreditCard; break;
@@ -179,6 +218,12 @@ namespace FinTransConverterLib.Transactions {
                             bool isMatch = true;
                             isMatch &= (new Regex(p.AccountingTextPattern, RegexOptions.IgnoreCase)).Match(Info).Success;
                             if(p.Level == 1) isMatch &= (new Regex(p.MemoPattern, RegexOptions.IgnoreCase)).Match(Memo).Success;
+
+                            if(isMatch) {
+                                destAccPattern = p.DestinationAccountPattern;
+                                tagsStr = p.TagsString;
+                            }
+
                             return isMatch;
                         }).Count() > 0)
                         .Select(pt => pt.Paymode)
@@ -186,7 +231,11 @@ namespace FinTransConverterLib.Transactions {
                     break;
             }
 
-            return pType;
+            return new ParsedPaymodeInfo() {
+                Paymode = pType, 
+                DestinationAccountPattern = destAccPattern, 
+                TagsString = tagsStr
+            };
         }
         
         public void ParseXmlElement(XmlReader reader, HomeBank hba) {

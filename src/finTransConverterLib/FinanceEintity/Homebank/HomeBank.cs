@@ -31,6 +31,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         public List<HBPayee> Payees { get; private set; }
         public List<HBCategory> Categories { get; private set; }
         public List<HBAssignment> Assignments { get; private set; }
+        public List<HBTag> Tags { get; private set; }
         public List<HBPaymodePatterns> PaymodePatterns { get; private set; }
         public List<HomeBankTransaction> ExistingTransactions { get; private set; }
 
@@ -45,6 +46,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             Payees = new List<HBPayee>();
             Categories = new List<HBCategory>();
             Assignments = new List<HBAssignment>();
+            Tags = new List<HBTag>();
             Accounts = new List<HBAccount>();
             PaymodePatterns = new List<HBPaymodePatterns>();
             ExistingTransactions = new List<HomeBankTransaction>();
@@ -197,6 +199,14 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                                     var existingTransaction = new HomeBankTransaction();
                                     existingTransaction.ParseXmlElement(reader, this);
                                     ExistingTransactions.Add(existingTransaction);
+                                    reader.MoveToElement();
+                                }
+                                break;
+                            case HBTag.XmlTagName:
+                                if(reader.HasAttributes) {
+                                    var tag = new HBTag();
+                                    tag.ParseXmlElement(reader);
+                                    Tags.Add(tag);
                                     reader.MoveToElement();
                                 }
                                 break;

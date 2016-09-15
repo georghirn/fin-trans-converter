@@ -2,7 +2,8 @@ using System;
 using System.Xml;
 
 namespace FinTransConverterLib.FinanceEntities.Homebank {
-public class HBAccount {
+    public class HBAccount {
+        public const uint XmlPosition = 3;
         public const string XmlTagName = "account";
         public const string AttrKey = "key";
         public const string AttrName = "name"; 

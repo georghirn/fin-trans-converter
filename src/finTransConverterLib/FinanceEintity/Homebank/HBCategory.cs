@@ -6,6 +6,7 @@ using FinTransConverterLib.Helpers;
 
 namespace FinTransConverterLib.FinanceEntities.Homebank {
     public class HBCategory {
+        public const uint XmlPosition = 5;
         public const string XmlTagName = "cat";
         public const string AttrKey = "key";
         public const string AttrName = "name"; 

@@ -76,44 +76,60 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
 
         public const string AttrMemo = "memo";
 
+        public const string AttrDestinationAccountPattern = "destination-account-pattern";
+
+        public const string AttrTags = "tags";
+
         public uint Level { get; private set; }
 
         public string AccountingTextPattern { get; private set; }
 
         public string MemoPattern { get; private set; }
+
+        public string DestinationAccountPattern { get; private set; }
+
+        public string TagsString { get; private set; }
         
-        public HBPaymodePattern(string accountingTextPaterns) {
+        public HBPaymodePattern(string accountingTextPaterns, string destAccPattern = null, string tags = null) {
             Level = 2;
             AccountingTextPattern = accountingTextPaterns;
             MemoPattern = null;
+            DestinationAccountPattern = destAccPattern;
+            TagsString = tags;
         }
 
-        public HBPaymodePattern(string accountingTextPaterns, string memoPattern = null) {
+        public HBPaymodePattern(string accountingTextPaterns, string memoPattern = null, string destAccPattern = null, string tags = null) {
             if(accountingTextPaterns == null) throw new ArgumentNullException("accountingTextPaterns");
             Level = (uint)((memoPattern == null) ? 2 : 1);
             AccountingTextPattern = accountingTextPaterns;
             MemoPattern = memoPattern;
+            DestinationAccountPattern = destAccPattern;
+            TagsString = tags;
         }
 
         public static HBPaymodePattern ParseXmlElement(XmlReader reader) {
-            string accountingText = null, memo = null;
+            string accountingText = null, memo = null, destAccPattern = null, tags = null;
 
             while(reader.MoveToNextAttribute()) {
                 switch(reader.Name) {
                     case AttrAccountingText: accountingText = reader.Value; break;
                     case AttrMemo: memo = reader.Value; break;
+                    case AttrDestinationAccountPattern: destAccPattern = reader.Value; break;
+                    case AttrTags: tags = reader.Value; break;
                 }
             }
 
-            return (accountingText != null) ? new HBPaymodePattern(accountingText, memo) : null;
+            return (accountingText != null) ? new HBPaymodePattern(accountingText, memo, destAccPattern, tags) : null;
         }
 
         public override string ToString() {
             return String.Format(
                 "|-- Level: {0}" + Environment.NewLine + 
                 "|-- AccountingTextPattern: {1}" + Environment.NewLine + 
-                "--- MemoPattern: {2}", 
-                Level, AccountingTextPattern, MemoPattern
+                "|-- MemoPattern: {2}" + Environment.NewLine + 
+                "|-- DestinationAccountPattern: {3}" + Environment.NewLine + 
+                "--- TagsString: {4}", 
+                Level, AccountingTextPattern, MemoPattern, DestinationAccountPattern, TagsString
             );
         }
     }

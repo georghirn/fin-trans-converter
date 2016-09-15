@@ -2,13 +2,20 @@ using System;
 using System.Xml;
 
 namespace FinTransConverterLib.FinanceEntities.Homebank {
-    public class HBPayee {
-        public const uint XmlPosition = 4;
-        public const string XmlTagName = "pay";
+    public class HBTag {
+        public const uint XmlPosition = 6;
+        public const string XmlTagName = "tag";
         public const string AttrKey = "key";
         public const string AttrName = "name"; 
-        public HBPayee() {}
+        public HBTag() {}
 
+        public HBTag(uint key, string name) {
+            Key = key;
+            Name = name;
+            FromXml = false;
+        }
+
+        public bool FromXml { get; private set; }
         public uint Key { get; private set; }
         public string Name { get; private set; }
 
@@ -19,6 +26,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     case AttrName: Name = reader.Value; break;
                 }
             }
+
+            FromXml = true;
         }
 
         public override string ToString() {

@@ -22,7 +22,13 @@ namespace FinTransConverterLib.Transactions {
             Iban                = reader.GetField<string>(0);
             ExtractionNumber    = reader.GetField<int>(1);
             AccountingDate      = reader.GetField<DateTime>(2);
-            ValutaDate          = DateTime.ParseExact(reader.GetField<string>(4), "yyyy-MM-dd-HH.mm.ss.FFFFFF", culture.DateTimeFormat);
+            
+            try {
+                ValutaDate = DateTime.ParseExact(reader.GetField<string>(4), "yyyy-MM-dd-HH.mm.ss.FFFFFF", culture.DateTimeFormat);
+            } catch(FormatException) {
+                ValutaDate = default(DateTime);
+            }
+
             PaymentReference    = reader.GetField<string>(5);
             Currency            = reader.GetField<string>(6);
             Amount              = Convert.ToDouble(reader.GetField<string>(7), culture.NumberFormat);
