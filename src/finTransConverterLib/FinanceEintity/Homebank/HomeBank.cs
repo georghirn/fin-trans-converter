@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -18,7 +19,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
 
         // supported write file types
         private static readonly List<FileType> suppWriteFileTypes = new List<FileType> { 
-            FinanceEntity.PossibleFileTypes[eFileTypes.Csv] 
+            FinanceEntity.PossibleFileTypes[eFileTypes.Csv], 
+            FinanceEntity.PossibleFileTypes[eFileTypes.Xhb]
         };
 
         private CultureInfo culture;
@@ -32,7 +34,12 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         public List<HBPaymodePatterns> PaymodePatterns { get; private set; }
         public List<HomeBankTransaction> ExistingTransactions { get; private set; }
 
-        public HomeBank(CultureInfo ci = null) : base (suppReadFileTypes, suppWriteFileTypes) {
+        public HBAccount TargetAccount { get; private set; }
+        private string TargetAccountPattern;
+
+        internal int MaxStrongLinkId { get; set; }
+        
+        public HomeBank(CultureInfo ci = null, string accountPattern = null) : base (suppReadFileTypes, suppWriteFileTypes) {
             culture = ci ?? (ci = CultureInfo.InvariantCulture);
             duplicates = new List<HomeBankTransaction>();
             Payees = new List<HBPayee>();
@@ -41,6 +48,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             Accounts = new List<HBAccount>();
             PaymodePatterns = new List<HBPaymodePatterns>();
             ExistingTransactions = new List<HomeBankTransaction>();
+            TargetAccountPattern = accountPattern ?? string.Empty;
+            TargetAccount = null;
         }
 
         protected override void Read(TextReader input, FileType fileType) {
@@ -53,17 +62,17 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         protected override bool Write(TextWriter output, FileType fileType) {
             switch(fileType.Id) {
                 case eFileTypes.Csv: return WriteCsv(output);
+                case eFileTypes.Xhb: return WriteHombankSettingsFile(output);
             }
             
             return true;
         }
 
         protected override void WriteFailed(string path) {
-            string duplicatesPath = String.Format("{0}{1}{2}.duplicates{3}", 
+            string duplicatesPath = String.Format("{0}{1}{2}.duplicates.csv", 
                 Path.GetDirectoryName(path), 
                 Path.DirectorySeparatorChar, 
-                Path.GetFileNameWithoutExtension(path), 
-                Path.GetExtension(path));
+                Path.GetFileNameWithoutExtension(path));
             
             using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesPath))) {
                 using(var writer = new CsvWriter(output)) {
@@ -112,6 +121,22 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             config.TrimFields = true;
             config.TrimHeaders = true;
             config.WillThrowOnMissingField = true;
+        }
+
+        private bool WriteHombankSettingsFile(TextWriter output) {
+            if(TargetAccountPattern == string.Empty) {
+                throw new InvalidOperationException(
+                    "Could not write to Homebank settings file, because of missing a valid target account pattern.");
+            }
+
+            if(TargetAccount == null) {
+                throw new InvalidOperationException(String.Format(
+                    "Could not write to Homebank settings file, because there is no account matching" + Environment.NewLine + 
+                    "with the target account pattern: {0}", TargetAccountPattern
+                ));
+            }
+            
+            return true;
         }
 
         private void ParsePaymodePatternsFile(TextReader input) {
@@ -179,8 +204,18 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     }
                 }
             }
-        }
 
+            // Try to parse taget account.
+            if(TargetAccountPattern != string.Empty) {
+                TargetAccount = Accounts.Where((a) => {
+                    return (new Regex(TargetAccountPattern)).Match(a.Name).Success;
+                }).FirstOrDefault();
+            }
+
+            // Try to parse maximum strong link id.
+            MaxStrongLinkId = ExistingTransactions.Max(t => t.StrongLinkId);
+        }
+        
         public override void Convert(IFinanceEntity finEntity) {
             if(finEntity is HelloBank) {
                 foreach(var transaction in finEntity.Transactions) {

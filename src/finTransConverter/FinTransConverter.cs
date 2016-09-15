@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Globalization;
 using FinTransConverterLib.FinanceEntities;
@@ -37,6 +38,11 @@ namespace FinTransConverter {
 
                 if(parsedArgs.HomebankSettingsFile != string.Empty) {
                     toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.HomebankSettingsFile);
+                    Console.WriteLine("Homebank settings file successfully parsed.");
+                }
+
+                if(Path.GetExtension(parsedArgs.TargetFile).Equals(eFileTypes.Xhb)) {
+                    toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.TargetFile);
                     Console.WriteLine("Homebank settings file successfully parsed.");
                 }
 

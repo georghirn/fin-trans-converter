@@ -18,13 +18,20 @@ namespace FinTransConverterLib.Transactions {
         public const string XmlAttrPayee = "payee";
         public const string XmlAttrCategory = "category";
         public const string XmlAttrAccount = "account";
+        public const string XmlAttrDestinationAccount = "dst_account";
         public const string XmlAttrWording = "wording";
         public const string XmlAttrInfo = "info";
         public const string XmlAttrTags = "tags";
         public const string XmlAttrStatus = "st";
         public const string XmlAttrFlags = "flags";
-
-        public HomeBankTransaction() { }
+        public const string XmlAttrKxfer = "kxfer";
+        public const string XmlAttrSplitCategoryies = "scat";
+        public const string XmlAttrSplitAmounts = "samt";
+        public const string XmlAttrSplitMemos = "smem";
+        
+        public HomeBankTransaction() { 
+            SplitTransactions = new List<SplitTransaction>();
+        }
 
         public DateTime Date { get; private set; }
         public double Amount { get; private set; }
@@ -32,9 +39,14 @@ namespace FinTransConverterLib.Transactions {
         public HBPayee Payee { get; private set; }
         public HBCategory Category { get; private set; }
         public HBAccount Account { get; private set; }
+        public HBAccount DestinationAccount { get; private set; }
         public string Memo { get; private set; }
         public string Info { get; private set; }
         public string[] Tags { get; private set; }
+        public eTransactionStatus Status { get; private set; }
+        public int Flags { get; private set; }
+        public int StrongLinkId { get; private set; }
+        public List<SplitTransaction> SplitTransactions { get; private set; }
 
         public override bool IsDuplicate(IEnumerable<ITransaction> transactions) {
             if(transactions == null) throw new ArgumentNullException("transactions");
@@ -91,7 +103,54 @@ namespace FinTransConverterLib.Transactions {
             // All other transaction types are not supported by this class.
             base.ConvertTransaction(t, feFrom, feTo);
         }
-
+        /*
+        <account key="1" pos="1" type="1" name="Girokonto Hello Bank" bankname="Hello Bank" initial="0" minimum="-3000" />
+        <account key="6" flags="64" pos="6" type="5" name="[type] liabilities / [not in reports]" number="[institute number]" 
+                 bankname="[institute name]" initial="0.080000000000000002" minimum="0.040000000000000001" />
+        <ope *date="736222" 
+             *amount="-14.219999999999999" 
+             *account="1" 
+             ???dst_account="6" 
+             *paymode="5" 
+             ---st="1" 
+             *payee="2" 
+             *category="14" 
+             *wording="test" 
+             *info="transfer test" 
+             *tags="tagtest1 tagtest2" 
+             ???kxfer="2" />
+        <ope *date="736222" 
+             *amount="14.219999999999999" 
+             *account="6" 
+             ???dst_account="1" 
+             *paymode="5" 
+             ---flags="2" 
+             *payee="2" 
+             *category="14" 
+             *wording="test" 
+             *info="transfer test" 
+             *tags="tagtest1 tagtest2" 
+             ???kxfer="2" />
+        <ope date="736222" 
+             amount="25.329999999999998" 
+             account="1" 
+             paymode="6" 
+             flags="258" 
+             wording="Einkauf" 
+             info="Einkauf" 
+             scat="42||62||78||42" 
+             samt="1.8||4.2599999999999767||14.220000000000002||5.0500000000000274" 
+             smem="Bananen||bsdfg||sdfdd||dfbdf" />
+        ???
+            dst_account
+            kxfer
+            scat
+            samt
+            smem
+        ---
+            st
+            flags
+        */
         private HBPayee TryFindPayee(string searchText, HomeBank hb) {
             if(hb == null) return null;
             return hb.Payees.Find(p => (new Regex(p.Name.Replace(" ", ".*"), RegexOptions.IgnoreCase)).Match(searchText).Success);
@@ -131,6 +190,11 @@ namespace FinTransConverterLib.Transactions {
         }
         
         public void ParseXmlElement(XmlReader reader, HomeBank hba) {
+            uint accountKey;
+            List<HBCategory> splitCategories = new List<HBCategory>();
+            List<double> splitAmounts = new List<double>();
+            List<string> splitMemos = new List<string>();
+
             while (reader.MoveToNextAttribute()) {
                 switch (reader.Name) {
                     case XmlAttrDate:
@@ -151,8 +215,12 @@ namespace FinTransConverterLib.Transactions {
                         Category = hba.Categories.Where(c => c.Key == categoryKey).FirstOrDefault();
                         break;
                     case XmlAttrAccount:
-                        var accountKey = XmlConvert.ToUInt32(reader.Value);
+                        accountKey = XmlConvert.ToUInt32(reader.Value);
                         Account = hba.Accounts.Where(a => a.Key == accountKey).FirstOrDefault();
+                        break;
+                    case XmlAttrDestinationAccount:
+                        accountKey = XmlConvert.ToUInt32(reader.Value);
+                        DestinationAccount = hba.Accounts.Where(a => a.Key == accountKey).FirstOrDefault();
                         break;
                     case XmlAttrWording:
                         Memo = reader.Value;
@@ -164,13 +232,47 @@ namespace FinTransConverterLib.Transactions {
                         Tags = reader.Value.Split(new char[] { ' ' });
                         break;
                     case XmlAttrStatus:
+                        Status = (eTransactionStatus)XmlConvert.ToUInt32(reader.Value);
                         break;
                     case XmlAttrFlags:
+                        Flags = XmlConvert.ToInt32(reader.Value);
+                        break;
+                    case XmlAttrKxfer:
+                        StrongLinkId = XmlConvert.ToInt32(reader.Value);
+                        break;
+                    case XmlAttrSplitCategoryies:
+                        splitCategories = reader.Value
+                            .Split(new string[] { "||" }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select((strCatKey) => 
+                                hba.Categories.Where(c => c.Key == Convert.ToUInt32(strCatKey))
+                                .FirstOrDefault())
+                            .ToList();
+                        break;
+                    case XmlAttrSplitAmounts:
+                        splitAmounts = reader.Value
+                            .Split(new string[] { "||" }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select((strAmount) => Convert.ToDouble(strAmount))
+                            .ToList();
+                        break;
+                    case XmlAttrSplitMemos:
+                        splitMemos = reader.Value
+                            .Split(new string[] { "||" }, StringSplitOptions.RemoveEmptyEntries)
+                            .ToList();
                         break;
                 }
             }
-        }
 
+            if(splitCategories.Count() == splitAmounts.Count() && splitAmounts.Count() == splitMemos.Count()) {
+                for(int i = 0; i < splitCategories.Count(); i++) {
+                    SplitTransactions.Add(new SplitTransaction(
+                        category: splitCategories[i], 
+                        amount: splitAmounts[i],
+                        memo: splitMemos[i]
+                    ));
+                }
+            }
+        }
+        
         public static void WriteCsvHeader(CsvWriter writer) {
             writer.WriteField("date");
             writer.WriteField("paymode");
@@ -215,5 +317,36 @@ namespace FinTransConverterLib.Transactions {
                 (Account == null) ? "  --- null" : Account.ToString().Indent("  ")
             );
         }
+    }
+
+    public class SplitTransaction {
+        public HBCategory Category { get; private set; }
+        public double Amount  { get; private set; }
+        public string Memo  { get; private set; }
+
+        public SplitTransaction(HBCategory category, double amount, string memo) {
+            Category = category;
+            Amount = amount;
+            Memo = memo;
+        }
+    }
+
+    public enum eTransactionStatus {
+        None, 
+        Cleared, 
+        Reconciled, 
+        Remind
+    }
+
+    public enum eTransactionFlags {
+        OldValid    = 0x001, // bit 0, deprecated since Hombank 5.x
+        Income      = 0x002, // bit 1, 
+        Auto        = 0x004, // bit 2, scheduled
+        Added       = 0x008, // bit 3, tmp flag
+        Changed     = 0x010, // bit 4, tmp flag
+        OldRemind   = 0x020, // bit 5, deprecated since Hombank 5.x
+        Cheq2       = 0x040, // bit 6
+        Limit       = 0x080, // bit 7, scheduled
+        Split       = 0x100  // bit 8
     }
 }

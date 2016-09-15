@@ -29,13 +29,17 @@ namespace FinTransConverter {
             "   -v, --verbose  Be more verbose." + Environment.NewLine + 
             "   --homebank-settings-file=HOMEBANKSETTINGS  Only valid when target conversion is a Hombank format." + Environment.NewLine + 
             "      Use this option to import a Homebank settings file (*.xhb). This will be parsed and used to" + Environment.NewLine + 
-            "      refine the conversion, e.g. for automatic transaction assignment." + Environment.NewLine + 
+            "      refine the conversion, e.g. for automatic transaction assignment. If the target is a Hombank" + Environment.NewLine + 
+            "      settings file (*.xhb) then this option will be ignored." + Environment.NewLine + 
             "   --paymode-patterns-file=PAYMODEPATTERNS  Only valid when target conversion is a Homebank format." + Environment.NewLine + 
             "      Use this option to import a paymode patterns file (*.xpmp). This will be parsed and used to" + Environment.NewLine + 
             "      refine the conversion." + Environment.NewLine + 
             "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
             "      the following types are supported:" + Environment.NewLine + 
-            GetFinanceEntityTypesDescription() + Environment.NewLine;
+            GetFinanceEntityTypesDescription() + Environment.NewLine + 
+            "   -a=ACCOUNTPATTERN, --target-account-pattern=ACCOUNTPATTERN Defines the account for the transactions." + Environment.NewLine + 
+            "      The account will be parsed from the Hombank settings file with the pattern. Only valid if the " + Environment.NewLine + 
+            "      target is a Homebank settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine;
          _args = new Docopt().Apply(USAGE, argv, help, version, optionsFirst, exit);
 
          try {
@@ -80,6 +84,8 @@ namespace FinTransConverter {
 
       public string PaymodePatternsFile { get { return _args["--paymode-patterns-file"]?.ToString() ?? string.Empty; } }
 
+      public string TargetAccountPattern { get { return _args["--target-account-pattern"]?.ToString() ?? string.Empty; } }
+      
       public eFinanceEntityType FinanceEntity { get; private set; }
 
       public eConversionType ConversionType {
