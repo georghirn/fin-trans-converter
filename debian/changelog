@@ -1,10 +1,12 @@
-fin-trans-converter (0.0.1-1ubuntu1~1.gbp25ce3c) UNRELEASED; urgency=medium
+fin-trans-converter (0.0.2-1ubuntu1) xenial; urgency=medium
 
-  ** SNAPSHOT build @25ce3c924304ef0784c86b1ed86f2d9940454afd **
+  * Improved command line UI.
+      -> more output
+      -> error handling
+      -> added option for verbose output
+  * New upstream release.
 
-  * UNRELEASED
-
- -- Georg Hirn <georg@georg.hirn@notebook.com>  Tue, 13 Sep 2016 22:30:27 +0200
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Thu, 15 Sep 2016 10:04:46 +0200
 
 fin-trans-converter (0.0.1-1) xenial; urgency=medium
 
