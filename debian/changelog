@@ -1,11 +1,18 @@
-fin-trans-converter (0.0.3-1ubuntu1~test1~1.gbpb4e5a9) UNRELEASED; urgency=medium
+fin-trans-converter (0.0.3-1ubuntu2) xenial; urgency=medium
 
-  ** SNAPSHOT build @b4e5a92043d0a1e7c6c14b43ba2287511d6d85c2 **
+  * added cheatsheet
+  * Created new upstream version 0.0.3-1ubuntu1~test1
+  * Improved transaction parsing and added cmd option.   
+      -> New Command line option target account pattern.   
+      -> Homebank transaction will now fully parsed from the xml settings file.
+  * Extended paymode pattern settings.   
+      -> tags attribute now supported   
+      -> destination-account-pattern attribute now supported
+  * Implemented import of data to  xhb file. Imported data can now directly be 
+    written to a Homebank settings file (*.xhb), including automatic detection 
+    of between accounts transactions and split transactions.
 
-  * UNRELEASED
-  * New upstream version.
-
- -- Georg Hirn <georg@georg.hirn@notebook.com>  Thu, 15 Sep 2016 11:22:31 +0200
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Fri, 16 Sep 2016 20:28:30 +0200
 
 fin-trans-converter (0.0.2-1ubuntu1) xenial; urgency=medium
 

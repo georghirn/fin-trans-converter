@@ -52,7 +52,7 @@ git push --all && git push --tags
 Develop on the current upstream version. Create snapshot releases (packages) 
 from the current upstream version. 
 ```bash
-gbp dch --snapshot --auto debian/
+gbp dch --snapshot --auto
 gbp buildpackage --git-ignore-new -b
 ```
 
@@ -62,7 +62,7 @@ e.g.: "0.0.2-1ubuntu1". Adjust the changelog entry from the snapshot release
 to the new upstream version, add an changelog entry "new upstream version" and commit
 the changes.
 ```bash
-gbp dch --auto --release debian/
+gbp dch --auto --release
 git add --all
 git commit -m "Created new upstream version 0.0.2-1ubuntu1"
 ```
