@@ -164,29 +164,21 @@ namespace FinTransConverterLib.Transactions {
             string destAccPattern = null;
             string tagsStr = null;
 
-            switch(feFrom.EntityType) {
-                case eFinanceEntityType.CreditCardAccount: pType = ePaymodeType.CreditCard; break;
-                case eFinanceEntityType.CheckAccount: 
-                case eFinanceEntityType.DepositAccount: 
-                case eFinanceEntityType.Unknown: 
-                default: 
-                    pType = hb?.PaymodePatterns
-                        .Where(pt => pt.Patterns.Where(p => {
-                            bool isMatch = true;
-                            isMatch &= (new Regex(p.AccountingTextPattern, RegexOptions.IgnoreCase)).Match(Info).Success;
-                            if(p.Level == 1) isMatch &= (new Regex(p.MemoPattern, RegexOptions.IgnoreCase)).Match(Memo).Success;
+            pType = hb?.PaymodePatterns
+                .Where(pt => pt.Patterns.Where(p => {
+                    bool isMatch = true;
+                    isMatch &= (new Regex(p.AccountingTextPattern, RegexOptions.IgnoreCase)).Match(Info).Success;
+                    if(p.Level == 1) isMatch &= (new Regex(p.MemoPattern, RegexOptions.IgnoreCase)).Match(Memo).Success;
 
-                            if(isMatch) {
-                                destAccPattern = p.DestinationAccountPattern;
-                                tagsStr = p.TagsString;
-                            }
+                    if(isMatch) {
+                        destAccPattern = p.DestinationAccountPattern;
+                        tagsStr = p.TagsString;
+                    }
 
-                            return isMatch;
-                        }).Count() > 0)
-                        .Select(pt => pt.Paymode)
-                        .FirstOrDefault() ?? ePaymodeType.Unknown;
-                    break;
-            }
+                    return isMatch;
+                }).Count() > 0)
+                .Select(pt => pt.Paymode)
+                .FirstOrDefault() ?? ePaymodeType.Unknown;
 
             return new ParsedPaymodeInfo() {
                 Paymode = pType, 
