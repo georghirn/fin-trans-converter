@@ -1,3 +1,11 @@
+fin-trans-converter (0.0.5-1ubuntu1) xenial; urgency=medium
+
+  * updated cheatsheet
+  * Created new upstream version 0.0.5-1ubuntu1
+  * Updated paymode detection. The creadit card finance entity type is not any more restricted to the credit card paymode.
+
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Fri, 16 Sep 2016 21:28:05 +0200
+
 fin-trans-converter (0.0.4-1ubuntu1) xenial; urgency=medium
 
   * Created new upstream version 0.0.4-1ubuntu1
