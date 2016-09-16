@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using CsvHelper;
@@ -26,6 +27,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         private CultureInfo culture;
 
         private List<HomeBankTransaction> duplicates;
+
+        public const string XmlTagName = "homebank";
 
         public List<HBAccount> Accounts { get; private set; }
         public List<HBPayee> Payees { get; private set; }
@@ -54,20 +57,30 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             TargetAccount = null;
         }
 
-        protected override void Read(TextReader input, FileType fileType) {
-            switch(fileType.Id) {
-                case eFileTypes.Xhb: ParseHombankSettingsFile(input); break;
-                case eFileTypes.PaymodePatterns: ParsePaymodePatternsFile(input); break;
+        protected override void Read(string path, FileType fileType) {
+            using(StreamReader reader = File.OpenText(path)) {
+                switch(fileType.Id) {
+                    case eFileTypes.Xhb: ParseHombankSettingsFile(reader); break;
+                    case eFileTypes.PaymodePatterns: ParsePaymodePatternsFile(reader); break;
+                }
             }
         }
 
-        protected override bool Write(TextWriter output, FileType fileType) {
+        protected override bool Write(string path, FileType fileType) {
+            bool success = true;
+
             switch(fileType.Id) {
-                case eFileTypes.Csv: return WriteCsv(output);
-                case eFileTypes.Xhb: return WriteHombankSettingsFile(output);
+                case eFileTypes.Csv: 
+                    using(StreamWriter writer = new StreamWriter(File.OpenWrite(path))) {
+                        success = WriteCsv(writer);
+                    } 
+                    break;
+                case eFileTypes.Xhb: 
+                    success = WriteHombankSettingsFile(path);
+                    break;
             }
             
-            return true;
+            return success;
         }
 
         protected override void WriteFailed(string path) {
@@ -125,7 +138,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             config.WillThrowOnMissingField = true;
         }
 
-        private bool WriteHombankSettingsFile(TextWriter output) {
+        private bool WriteHombankSettingsFile(string path) {
             if(TargetAccountPattern == string.Empty) {
                 throw new InvalidOperationException(
                     "Could not write to Homebank settings file, because of missing a valid target account pattern.");
@@ -137,10 +150,97 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     "with the target account pattern: {0}", TargetAccountPattern
                 ));
             }
-            
-            return true;
-        }
 
+            duplicates.Clear();            
+            XmlDocument doc = new XmlDocument();
+            using(StreamReader xmlReader = new StreamReader(File.OpenRead(path))) {
+                doc.Load(xmlReader);
+            }
+
+            XmlNodeList rootList = doc.GetElementsByTagName(XmlTagName);
+            if(rootList.Count > 0) {
+                XmlNode homebank = rootList[0];
+                XmlNodeList homebankChilds = homebank.ChildNodes;
+
+                // Write new tags if there are new one.
+                if(Tags.Where(tag => tag.FromXml == false).Count() > 0) {
+                    XmlNode previousNode = null;
+
+                    XmlNodeList tags = doc.GetElementsByTagName(HBTag.XmlTagName);
+                    if(tags.Count > 0) previousNode = tags[tags.Count - 1];
+                    else {
+                        XmlNodeList categories = doc.GetElementsByTagName(HBCategory.XmlTagName);
+                        if(categories.Count > 0) previousNode = categories[categories.Count - 1];
+                        else {
+                            XmlNodeList payees = doc.GetElementsByTagName(HBPayee.XmlTagName);
+                            if(payees.Count > 0) previousNode = payees[payees.Count - 1];
+                            else {
+                                XmlNodeList accounts = doc.GetElementsByTagName(HBAccount.XmlTagName);
+                                if(accounts.Count > 0) previousNode = accounts[accounts.Count - 1];
+                                else {
+                                    XmlNodeList props = doc.GetElementsByTagName("properties");
+                                    if(props.Count > 0) previousNode = props[props.Count - 1];
+                                    else previousNode = homebank.FirstChild;
+                                }
+                            }
+                        }
+                    }
+
+                    foreach(var tag in Tags) {
+                        // Only create new tags.
+                        if(tag.FromXml == false) {
+                            previousNode = homebank.InsertAfter(tag.CreateXmlElement(doc), previousNode);
+                        }
+                    }
+                }
+
+                // Write new transactions.
+                XmlNodeList xmlTransactions = doc.GetElementsByTagName(HomeBankTransaction.XmlTagName);
+                XmlNode current = null, previous;
+                HomeBankTransaction hbTransaction;
+
+                if(xmlTransactions.Count > 0) current = xmlTransactions[0];
+                else current = homebank.LastChild;
+                
+                foreach(var transaction in Transactions) {
+                    hbTransaction = transaction as HomeBankTransaction;
+                    
+                    if(hbTransaction.IsDuplicate(ExistingTransactions)) {
+                        duplicates.Add(hbTransaction);
+                    } else {
+                        previous = hbTransaction.GetPreviousXmlElement(current);
+                        previous = homebank.InsertAfter(hbTransaction.CreateXmlElement(doc), previous);
+
+                        if(hbTransaction.Paymode == ePaymodeType.BetweenAccounts) {
+                            var element = HomeBankTransaction
+                                .CreateLinkedTransaction(hbTransaction, culture)
+                                .CreateXmlElement(doc);
+                            previous = homebank.InsertAfter(element, previous);
+                        }
+
+                        current = previous;
+                    }
+                }
+            }
+
+            using(FileStream fileWriter = File.OpenWrite(path)) {
+                byte[] xmlHeader = new UTF8Encoding(true).GetBytes("<?xml version=\"1.0\"?>" + Environment.NewLine);
+                fileWriter.Write(xmlHeader, 0, xmlHeader.Length);
+
+                var settings = new XmlWriterSettings() { 
+                    OmitXmlDeclaration = true, 
+                    Indent = true, 
+                    NewLineChars = Environment.NewLine
+                };
+                
+                using(XmlWriter xmlWriter = XmlWriter.Create(fileWriter, settings)) {
+                    doc.Save(xmlWriter);
+                }
+            }
+
+            return duplicates.Count() <= 0;
+        }
+        
         private void ParsePaymodePatternsFile(TextReader input) {
             using(XmlReader reader = XmlReader.Create(input)) {
                 while(reader.Read()) {
@@ -196,7 +296,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                                 break;
                             case HomeBankTransaction.XmlTagName:
                                 if(reader.HasAttributes) {
-                                    var existingTransaction = new HomeBankTransaction();
+                                    var existingTransaction = new HomeBankTransaction(culture);
                                     existingTransaction.ParseXmlElement(reader, this);
                                     ExistingTransactions.Add(existingTransaction);
                                     reader.MoveToElement();
@@ -223,14 +323,15 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             }
 
             // Try to parse maximum strong link id.
-            MaxStrongLinkId = ExistingTransactions.Max(t => t.StrongLinkId);
+            if(ExistingTransactions.Count() > 0) MaxStrongLinkId = ExistingTransactions.Max(t => t.StrongLinkId);
+            else MaxStrongLinkId = 0;
         }
         
         public override void Convert(IFinanceEntity finEntity) {
             if(finEntity is HelloBank) {
                 foreach(var transaction in finEntity.Transactions) {
                     var helloBankTransaction = transaction as HelloBankTransaction;
-                    var homebankTransaction = new HomeBankTransaction();
+                    var homebankTransaction = new HomeBankTransaction(culture);
                     homebankTransaction.ConvertTransaction(helloBankTransaction, finEntity, this);
                     Transactions.Add(homebankTransaction);
                 }

@@ -56,12 +56,10 @@ namespace FinTransConverterLib.FinanceEntities {
                     "The read file type \"{0}\" is not supported by the {1} instance.", fileExt, this.GetType().Name));
             }
 
-            using(StreamReader reader = File.OpenText(path)) {
-                Read(reader, fileType);
-            }
+            Read(path, fileType);
         }
 
-        protected abstract void Read(TextReader input, FileType fileType);
+        protected abstract void Read(string path, FileType fileType);
 
         public void WriteTo(string path) {
             var fileExt = Path.GetExtension(path);
@@ -76,12 +74,10 @@ namespace FinTransConverterLib.FinanceEntities {
                     "The write file type \"{0}\" is not supported by the {1} instance.", fileExt, this.GetType().Name));
             }
 
-            using(StreamWriter writer = new StreamWriter(File.OpenWrite(path))) {
-                if(Write(writer, fileType) == false) WriteFailed(path);
-            }
+            if(Write(path, fileType) == false) WriteFailed(path);
         }
 
-        protected abstract bool Write(TextWriter output, FileType fileType);
+        protected abstract bool Write(string path, FileType fileType);
 
         protected virtual void WriteFailed(string path) {
             // Nothing to do.

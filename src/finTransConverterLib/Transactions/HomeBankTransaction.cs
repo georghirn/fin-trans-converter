@@ -30,11 +30,16 @@ namespace FinTransConverterLib.Transactions {
         public const string XmlAttrSplitAmounts = "samt";
         public const string XmlAttrSplitMemos = "smem";
         
-        public HomeBankTransaction() { 
+        private NumberFormatInfo xmlNumberFormatInfo;
+
+        public HomeBankTransaction(CultureInfo culture) { 
             SplitTransactions = new List<SplitTransaction>();
             StrongLinkId = -1;
             Flags = 0;
             DestinationAccount = null;
+            xmlNumberFormatInfo = culture.NumberFormat.Clone() as NumberFormatInfo;
+            xmlNumberFormatInfo.NumberDecimalSeparator = ".";
+            xmlNumberFormatInfo.NumberGroupSeparator = ",";
         }
 
         public DateTime Date { get; private set; }
@@ -102,15 +107,15 @@ namespace FinTransConverterLib.Transactions {
                 
                 // Parse paymode infos from paymode patterns file.
                 var pmInfo = TryFindPaymode(feFrom, hb); // Memo and Info have to be set before.
-                Paymode = pmInfo.Paymode;
+                Paymode = pmInfo?.Paymode ?? ePaymodeType.Unknown;
 
                 // Check if paymode type is between accounts and if so do some further processing.
                 if(Paymode == ePaymodeType.BetweenAccounts) {
                     StrongLinkId = ++hb.MaxStrongLinkId;
                     Flags |= (int)eTransactionFlags.Split;
-
+                    
                     // Try to find destination account.
-                    if(pmInfo.DestinationAccountPattern != null) {
+                    if(pmInfo?.DestinationAccountPattern != null) {
                         DestinationAccount = hb.Accounts.Where((a) => {
                             return (new Regex(pmInfo.DestinationAccountPattern)).Match(a.Name).Success;
                         }).FirstOrDefault();
@@ -118,10 +123,10 @@ namespace FinTransConverterLib.Transactions {
                 }
 
                 // Save tags and check if there are new one.
-                Tags = pmInfo.TagsString.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                Tags = pmInfo?.TagsString?.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
                 List<string> newTagsNames = Tags.Where(tag => hb.Tags.Any(hbTag => hbTag.Name.Equals(tag)) == false).ToList();
                 if(newTagsNames.Count() > 0) {
-                    var maxKey = hb.Tags.Max(tag => tag.Key);
+                    var maxKey = (hb.Tags != null && hb.Tags.Count() > 0) ? hb.Tags.Max(tag => tag.Key) : 0;
                     foreach(var newTagName in newTagsNames) hb.Tags.Add(new HBTag(key: ++maxKey, name: newTagName));
                 }
 
@@ -133,55 +138,7 @@ namespace FinTransConverterLib.Transactions {
             // All other transaction types are not supported by this class.
             base.ConvertTransaction(t, feFrom, feTo);
         }
-        /*
-
-        <account key="1" pos="1" type="1" name="Girokonto Hello Bank" bankname="Hello Bank" initial="0" minimum="-3000" />
-        <account key="6" flags="64" pos="6" type="5" name="[type] liabilities / [not in reports]" number="[institute number]" 
-                 bankname="[institute name]" initial="0.080000000000000002" minimum="0.040000000000000001" />
-        <ope *date="736222" 
-             *amount="-14.219999999999999" 
-             *account="1" 
-             ???dst_account="6" 
-             *paymode="5" 
-             ---st="1" 
-             *payee="2" 
-             *category="14" 
-             *wording="test" 
-             *info="transfer test" 
-             *tags="tagtest1 tagtest2" 
-             ???kxfer="2" />
-        <ope *date="736222" 
-             *amount="14.219999999999999" 
-             *account="6" 
-             ???dst_account="1" 
-             *paymode="5" 
-             ---flags="2" 
-             *payee="2" 
-             *category="14" 
-             *wording="test" 
-             *info="transfer test" 
-             *tags="tagtest1 tagtest2" 
-             ???kxfer="2" />
-        <ope date="736222" 
-             amount="25.329999999999998" 
-             account="1" 
-             paymode="6" 
-             flags="258" 
-             wording="Einkauf" 
-             info="Einkauf" 
-             scat="42||62||78||42" 
-             samt="1.8||4.2599999999999767||14.220000000000002||5.0500000000000274" 
-             smem="Bananen||bsdfg||sdfdd||dfbdf" />
-        ???
-            dst_account
-            kxfer
-            scat
-            samt
-            smem
-        ---
-            st
-            flags
-        */
+        
         private HBPayee TryFindPayee(string searchText, HomeBank hb) {
             if(hb == null) return null;
             return hb.Payees.Find(p => (new Regex(p.Name.Replace(" ", ".*"), RegexOptions.IgnoreCase)).Match(searchText).Success);
@@ -250,7 +207,7 @@ namespace FinTransConverterLib.Transactions {
                         Date = (new DateTime()).JulianToDateTime(XmlConvert.ToUInt32(reader.Value));
                         break;
                     case XmlAttrAmount:
-                        Amount = XmlConvert.ToDouble(reader.Value);
+                        Amount = Convert.ToDouble(reader.Value, xmlNumberFormatInfo);
                         break;
                     case XmlAttrPaymode:
                         Paymode = (ePaymodeType)XmlConvert.ToInt32(reader.Value);
@@ -300,7 +257,7 @@ namespace FinTransConverterLib.Transactions {
                     case XmlAttrSplitAmounts:
                         splitAmounts = reader.Value
                             .Split(new string[] { "||" }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select((strAmount) => Convert.ToDouble(strAmount))
+                            .Select((strAmount) => Convert.ToDouble(strAmount, xmlNumberFormatInfo))
                             .ToList();
                         break;
                     case XmlAttrSplitMemos:
@@ -320,6 +277,138 @@ namespace FinTransConverterLib.Transactions {
                     ));
                 }
             }
+        }
+        
+        public XmlElement CreateXmlElement(XmlDocument doc) {
+            XmlElement elem = doc.CreateElement(XmlTagName);
+            
+            XmlAttribute attrDate = doc.CreateAttribute(XmlAttrDate);
+            attrDate.Value = Date.ToJulianDate().ToString(); 
+            elem.Attributes.Append(attrDate);
+
+            XmlAttribute attrAmount = doc.CreateAttribute(XmlAttrAmount);
+            attrAmount.Value = Amount.ToString(xmlNumberFormatInfo);
+            elem.Attributes.Append(attrAmount);
+            
+            XmlAttribute attrPaymode = doc.CreateAttribute(XmlAttrPaymode);
+            attrPaymode.Value = ((int)Paymode).ToString();
+            elem.Attributes.Append(attrPaymode);
+            
+            if(Payee != null) {
+                XmlAttribute attrPayee = doc.CreateAttribute(XmlAttrPayee);
+                attrPayee.Value = Payee.Key.ToString();
+                elem.Attributes.Append(attrPayee);
+            }
+
+            if(Category != null) {
+                XmlAttribute attrCategory = doc.CreateAttribute(XmlAttrCategory);
+                attrCategory.Value = Category.Key.ToString();
+                elem.Attributes.Append(attrCategory);
+            }
+
+            if(Account != null) {
+                XmlAttribute attrAccount = doc.CreateAttribute(XmlAttrAccount);
+                attrAccount.Value = Account.Key.ToString();
+                elem.Attributes.Append(attrAccount);
+            }
+
+            if(DestinationAccount != null) {
+                XmlAttribute attrDestinationAccount = doc.CreateAttribute(XmlAttrDestinationAccount);
+                attrDestinationAccount.Value = DestinationAccount.Key.ToString();
+                elem.Attributes.Append(attrDestinationAccount);
+            }
+
+            XmlAttribute attrMemo = doc.CreateAttribute(XmlAttrWording); 
+            attrMemo.Value = Memo;
+            elem.Attributes.Append(attrMemo);
+            
+            XmlAttribute attrInfo = doc.CreateAttribute(XmlAttrInfo);
+            attrInfo.Value = Info;
+            elem.Attributes.Append(attrInfo);
+            
+            if(Tags != null && Tags.Length > 0) {
+                XmlAttribute attrTags = doc.CreateAttribute(XmlAttrTags);
+                attrTags.Value = String.Join(" ", Tags);
+                elem.Attributes.Append(attrTags);
+            }
+
+            if(Status != eTransactionStatus.None) {
+                XmlAttribute attrStatus = doc.CreateAttribute(XmlAttrStatus);
+                attrStatus.Value = ((int)Status).ToString();
+                elem.Attributes.Append(attrStatus);
+            }
+
+            if(Flags > 0) {
+                XmlAttribute attrFlags = doc.CreateAttribute(XmlAttrFlags);
+                attrFlags.Value = Flags.ToString();
+                elem.Attributes.Append(attrFlags);
+            }
+
+            if(StrongLinkId > 0 && Paymode == ePaymodeType.BetweenAccounts) {
+                XmlAttribute attrStrongLinkId = doc.CreateAttribute(XmlAttrKxfer);
+                attrStrongLinkId.Value = StrongLinkId.ToString();
+                elem.Attributes.Append(attrStrongLinkId);
+            }
+
+            if(((Flags & (int)eTransactionFlags.Split) > 0) && SplitTransactions.Count() > 0) {
+                XmlAttribute attrSplitCategoryies = doc.CreateAttribute(XmlAttrSplitCategoryies);
+                attrSplitCategoryies.Value = String.Join("||", SplitTransactions.Select(st => st.Category.Key.ToString()).ToArray());
+                elem.Attributes.Append(attrSplitCategoryies);
+                
+                XmlAttribute attrSplitAmounts = doc.CreateAttribute(XmlAttrSplitAmounts);
+                attrSplitAmounts.Value = String.Join("||", SplitTransactions.Select(st => st.Amount.ToString(xmlNumberFormatInfo)).ToArray());;
+                elem.Attributes.Append(attrSplitAmounts);
+                
+                XmlAttribute attrSplitMemos = doc.CreateAttribute(XmlAttrSplitMemos);
+                attrSplitMemos.Value = String.Join("||", SplitTransactions.Select(st => st.Memo).ToArray());;
+                elem.Attributes.Append(attrSplitMemos);
+            }
+
+            return elem;
+        }
+        
+        public XmlNode GetPreviousXmlElement(XmlNode start) {
+            XmlNode current = start, next = null;
+            uint currentDateVal, nextDateVal;
+            uint thisJulianDate = Date.ToJulianDate();
+
+            while(current != null) {
+                if(current.NodeType != XmlNodeType.Element) return null;
+                if(current.Name.Equals(XmlTagName) == false) return current;
+
+                next = current.NextSibling;
+                if(next == null) return current;
+                if(next.NodeType != XmlNodeType.Element) return current;
+                if(next.Name.Equals(XmlTagName) == false) return current;
+
+                currentDateVal = Convert.ToUInt32(current.Attributes.GetNamedItem(XmlAttrDate)?.Value ?? "0");
+                nextDateVal = Convert.ToUInt32(next.Attributes.GetNamedItem(XmlAttrDate)?.Value ?? "0");
+
+                if(thisJulianDate >= currentDateVal && thisJulianDate < nextDateVal) return current;
+                if(thisJulianDate < currentDateVal) current = current.PreviousSibling;
+                else current = next;
+            }
+
+            return null;
+        }
+
+        public static HomeBankTransaction CreateLinkedTransaction(HomeBankTransaction trans, CultureInfo culture) {
+            return new HomeBankTransaction(culture) {
+                Date = trans.Date, 
+                Amount = trans.Amount * (-1), 
+                Paymode = trans.Paymode, 
+                Payee = trans.Payee, 
+                Category = trans.Category, 
+                Account = trans.DestinationAccount, 
+                DestinationAccount = trans.Account, 
+                Memo = trans.Memo, 
+                Info = trans.Info, 
+                Tags = trans.Tags, 
+                Status = trans.Status, 
+                Flags = ((trans.Amount * (-1)) >= 0) ? (trans.Flags & (int)eTransactionFlags.Income) : (trans.Flags & ~(int)eTransactionFlags.Income), 
+                StrongLinkId = trans.StrongLinkId, 
+                SplitTransactions = trans.SplitTransactions
+            };
         }
         
         public static void WriteCsvHeader(CsvWriter writer) {
@@ -355,19 +444,42 @@ namespace FinTransConverterLib.Transactions {
                 "|-- Tags: {5}" + Environment.NewLine + 
                 "|-+ Payee: " + Environment.NewLine + "{6}" + Environment.NewLine + 
                 "|-+ Category: " + Environment.NewLine + "{7}" + Environment.NewLine + 
-                "--+ Account: " + Environment.NewLine + "{8}", 
-                Date, Amount, Paymode.ToString(), Memo, Info, (new Func<string[], string>((tags) => { 
-                    string str = "";
-                    if(tags != null) foreach(var tag in tags) str = String.Format("{0} {1}", str, tag);
-                    return str;
-                }))(Tags),  
+                "|-+ Account: " + Environment.NewLine + "{8}" + Environment.NewLine + 
+                "|-+ DestinationAccount: " + Environment.NewLine + "{9}" + Environment.NewLine + 
+                "|-- Status: {10}" + Environment.NewLine + 
+                "|-- Flags: {11}" + Environment.NewLine + 
+                "|-- StrongLinkId: {12}" + Environment.NewLine + 
+                "--+ SplitTransactions: " + Environment.NewLine + "{13}", 
+                Date, Amount, Paymode.ToString(), Memo, Info, 
+                (Tags == null) ? "null" : String.Join(" ", Tags),  
                 (Payee == null) ? "  --- null" : Payee.ToString().Indent("| "), 
                 (Category == null) ? "  --- null" : Category.ToString().Indent("| "), 
-                (Account == null) ? "  --- null" : Account.ToString().Indent("  ")
+                (Account == null) ? "  --- null" : Account.ToString().Indent("| "), 
+                (DestinationAccount == null) ? "  --- null" : DestinationAccount.ToString().Indent("| "),
+                Status.ToString(), Flags, StrongLinkId, 
+                (SplitTransactions.Count() > 0) ? (new Func<List<SplitTransaction>, string>((list) => {
+                    string str = "";
+                    foreach(var t in list) {
+                        if(list.LastOrDefault().Equals(t)) {
+                            str = String.Format(
+                                "{0}" + Environment.NewLine + 
+                                "--+ Split transaction: " + Environment.NewLine + "{1}", 
+                                str, (t == null) ? "  --- null" : t.ToString().Indent("  ")
+                            );
+                        } else {
+                            str = String.Format(
+                                "{0}" + Environment.NewLine + 
+                                "|-+ Split transaction: " + Environment.NewLine + "{1}" + Environment.NewLine + "|", 
+                                str, (t == null) ? "  --- null" : t.ToString().Indent("| ")
+                            );
+                        }
+                    }
+                    return str;
+                }))(SplitTransactions) : "  --- null"
             );
         }
     }
-
+    
     public class SplitTransaction {
         public HBCategory Category { get; private set; }
         public double Amount  { get; private set; }
@@ -377,6 +489,16 @@ namespace FinTransConverterLib.Transactions {
             Category = category;
             Amount = amount;
             Memo = memo;
+        }
+
+        public override string ToString() {
+            return String.Format(
+                "|-- Amount: {0}" + Environment.NewLine +
+                "|-- Memo: {1}" + Environment.NewLine + 
+                "--+ Category: " + Environment.NewLine + "{2}", 
+                Amount, Memo, 
+                (Category == null) ? "  --- null" : Category.ToString().Indent("| ")
+            );
         }
     }
 

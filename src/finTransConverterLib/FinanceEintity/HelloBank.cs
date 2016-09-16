@@ -35,13 +35,15 @@ namespace FinTransConverterLib.FinanceEntities {
             }
         }
 
-        protected override void Read(TextReader input, FileType fileType) {
-            switch(fileType.Id) {
-                case eFileTypes.Csv: ParseCsv(input); break;
+        protected override void Read(string path, FileType fileType) {
+            using(StreamReader reader = File.OpenText(path)) {
+                switch(fileType.Id) {
+                    case eFileTypes.Csv: ParseCsv(reader); break;
+                }
             }
         }
 
-        protected override bool Write(TextWriter output, FileType fileType) {
+        protected override bool Write(string path, FileType fileType) {
             // Nothing to do for now.
             return true;
         }

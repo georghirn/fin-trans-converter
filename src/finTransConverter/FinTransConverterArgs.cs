@@ -34,12 +34,12 @@ namespace FinTransConverter {
             "   --paymode-patterns-file=PAYMODEPATTERNS  Only valid when target conversion is a Homebank format." + Environment.NewLine + 
             "      Use this option to import a paymode patterns file (*.xpmp). This will be parsed and used to" + Environment.NewLine + 
             "      refine the conversion." + Environment.NewLine + 
-            "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
-            "      the following types are supported:" + Environment.NewLine + 
-            GetFinanceEntityTypesDescription() + Environment.NewLine + 
             "   -a=ACCOUNTPATTERN, --target-account-pattern=ACCOUNTPATTERN Defines the account for the transactions." + Environment.NewLine + 
             "      The account will be parsed from the Hombank settings file with the pattern. Only valid if the " + Environment.NewLine + 
-            "      target is a Homebank settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine;
+            "      target is a Homebank settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine + 
+            "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
+            "      the following types are supported:" + Environment.NewLine + 
+            GetFinanceEntityTypesDescription() + Environment.NewLine;
          _args = new Docopt().Apply(USAGE, argv, help, version, optionsFirst, exit);
 
          try {
@@ -63,11 +63,12 @@ namespace FinTransConverter {
               "  -> target file: {1}" + Environment.NewLine + 
               "  -> conversion type: {2}" + Environment.NewLine + 
               "  -> account type: {3}" + Environment.NewLine + 
-              "{4}{5}{6}", 
+              "{4}{5}{6}{7}", 
               SourceFile, TargetFile, ConversionType.ToString(), FinanceEntity.ToString(), 
               (OptVerbose) ? "  -> be verbose" + Environment.NewLine : "", 
               (HomebankSettingsFile != string.Empty) ? "  -> homebank settings file: " + HomebankSettingsFile + Environment.NewLine : "", 
-              (PaymodePatternsFile != string.Empty) ? "  -> paymode patterns file: " + PaymodePatternsFile + Environment.NewLine : "");
+              (PaymodePatternsFile != string.Empty) ? "  -> paymode patterns file: " + PaymodePatternsFile + Environment.NewLine : "", 
+              (TargetAccountPattern != string.Empty) ? "  -> target account pattern: " + TargetAccountPattern + Environment.NewLine : "");
       }
 
       public string SourceFile { get { return _args["SOURCE"].ToString(); } }
@@ -80,11 +81,11 @@ namespace FinTransConverter {
 
       public bool OptVerbose { get { return _args["--verbose"].IsTrue; } }
 
-      public string HomebankSettingsFile { get { return _args["--homebank-settings-file"]?.ToString() ?? string.Empty; } }
+      public string HomebankSettingsFile { get { return GetStringValue("--homebank-settings-file"); } }
 
-      public string PaymodePatternsFile { get { return _args["--paymode-patterns-file"]?.ToString() ?? string.Empty; } }
+      public string PaymodePatternsFile { get { return GetStringValue("--paymode-patterns-file"); } }
 
-      public string TargetAccountPattern { get { return _args["--target-account-pattern"]?.ToString() ?? string.Empty; } }
+      public string TargetAccountPattern { get { return GetStringValue("--target-account-pattern"); } }
       
       public eFinanceEntityType FinanceEntity { get; private set; }
 
@@ -96,6 +97,11 @@ namespace FinTransConverter {
          }
       }
       private eConversionType _conversionType;
+
+      private string GetStringValue(string key) {
+          if(_args.ContainsKey(key) && _args[key] != null) return _args[key].ToString();
+          return string.Empty;
+      }
 
       private string GetConversionTypesDescription() {
          string str = "";

@@ -30,6 +30,20 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             FromXml = true;
         }
 
+        public XmlElement CreateXmlElement(XmlDocument doc) {
+            XmlElement elem = doc.CreateElement(XmlTagName);
+            
+            XmlAttribute attrKey = doc.CreateAttribute(AttrKey);
+            attrKey.Value = Key.ToString();
+            elem.Attributes.Append(attrKey);
+
+            XmlAttribute attrName = doc.CreateAttribute(AttrName);
+            attrName.Value = Name;
+            elem.Attributes.Append(attrName);
+
+            return elem;
+        }
+
         public override string ToString() {
             return String.Format(
                 "|-- Key: {0}" + Environment.NewLine + 
