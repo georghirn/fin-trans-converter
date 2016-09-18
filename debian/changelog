@@ -1,3 +1,18 @@
+fin-trans-converter (0.0.6-1ubuntu1) xenial; urgency=medium
+
+  * Support for Hellobank credit card accounts html. Transactions can now be 
+    parsed from a hellobank credit card account in html format.
+  * Added linked transaction duplicate check.
+  * Improved write failed for Hombank. When duplicates are detected also a text 
+    file with detailed information of the duplicate transactions will now be 
+    generated.
+  * Linked transaction support for homebank csv files. Writing hombank csv 
+    files now also supports linked transactions.
+  * Fixed date conversion and WriteFailed() bugs.
+  * Created new upstream version 0.0.6-1ubuntu1
+
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Sun, 18 Sep 2016 12:13:14 +0200
+
 fin-trans-converter (0.0.5-1ubuntu1) xenial; urgency=medium
 
   * updated cheatsheet
