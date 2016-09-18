@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using CsvHelper;
 using CsvHelper.Configuration;
+using FinTransConverterLib.Helpers;
 using FinTransConverterLib.Transactions;
 
 namespace FinTransConverterLib.FinanceEntities.Homebank {
@@ -85,17 +86,44 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         }
 
         protected override void WriteFailed(string path) {
-            string duplicatesPath = String.Format("{0}{1}{2}.duplicates.csv", 
+            // Writecsv file with duplicates.
+            string duplicatesCsvFile = String.Format("{0}{1}{2}.duplicates.csv", 
                 Path.GetDirectoryName(path), 
                 Path.DirectorySeparatorChar, 
                 Path.GetFileNameWithoutExtension(path));
             
-            using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesPath))) {
+            using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesCsvFile))) {
                 using(var writer = new CsvWriter(output)) {
                     HomeBankTransaction.WriteCsvHeader(writer);
                     foreach(var transaction in duplicates) {
                         transaction.WriteCsv(writer, culture);
                         writer.NextRecord();
+                    }
+                }
+            }
+
+            // Write text file with duplicates. This includes all values of a transaction.
+            string duplicatesTextFile = String.Format("{0}{1}{2}.duplicates.txt", 
+                Path.GetDirectoryName(path), 
+                Path.DirectorySeparatorChar, 
+                Path.GetFileNameWithoutExtension(path));
+            
+            using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesTextFile))) {
+                output.WriteLine(String.Format(
+                    "Timestamp: {0}" + Environment.NewLine + 
+                    "Duplicates for target: {1}" + Environment.NewLine + 
+                    "---------------------------------------------------------------------" + Environment.NewLine + 
+                    "Duplicate transactions:", 
+                    (new DateTime()).ToString(), path
+                ));
+                foreach(var transaction in duplicates) {
+                    if(duplicates.LastOrDefault().Equals(transaction)) {
+                        output.WriteLine(String.Format(
+                            "--+ Transaction: " + Environment.NewLine + "{0}", transaction.ToString().Indent("  ")));
+                    } else {
+                        output.WriteLine(String.Format(
+                            "|-+ Transaction: " + Environment.NewLine + "{0}" + Environment.NewLine + "|", 
+                            transaction.ToString().Indent("| ")));
                     }
                 }
             }
