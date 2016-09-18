@@ -67,14 +67,15 @@ namespace FinTransConverterLib.Helpers {
         public static readonly DateTime UnixZeroDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public static DateTime JulianToDateTime(this DateTime d, UInt32 julianDate) {
+            var sourceKind = d.Kind;
             double unixTime = (julianDate - JulianUnixZero) * 86400;
             d = UnixZeroDateTime;
-            d = d.AddSeconds(unixTime).ToLocalTime();
-            return d;
+            d = d.AddSeconds(unixTime);
+            return (sourceKind != DateTimeKind.Utc) ? d.ToLocalTime() : d;
         }
 
         public static UInt32 ToJulianDate(this DateTime d) {
-            TimeSpan diff = d.ToUniversalTime() - UnixZeroDateTime;
+            TimeSpan diff = ((d.Kind != DateTimeKind.Utc) ? d.ToUniversalTime() : d) - UnixZeroDateTime;
             double unixTime = Math.Floor(diff.TotalSeconds);
             UInt32 julianDate = (UInt32)(Math.Floor(unixTime / 86400) + JulianUnixZero);
             return julianDate;

@@ -196,7 +196,7 @@ namespace FinTransConverterLib.Transactions {
             while (reader.MoveToNextAttribute()) {
                 switch (reader.Name) {
                     case XmlAttrDate:
-                        Date = (new DateTime()).JulianToDateTime(XmlConvert.ToUInt32(reader.Value));
+                        Date = (new DateTime(0, DateTimeKind.Utc)).JulianToDateTime(XmlConvert.ToUInt32(reader.Value));
                         break;
                     case XmlAttrAmount:
                         Amount = Convert.ToDouble(reader.Value, xmlNumberFormatInfo);

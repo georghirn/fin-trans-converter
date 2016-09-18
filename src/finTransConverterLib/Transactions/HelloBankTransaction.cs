@@ -27,7 +27,14 @@ namespace FinTransConverterLib.Transactions {
             AccountingDate      = reader.GetField<DateTime>(2);
             
             try {
-                ValutaDate = DateTime.ParseExact(reader.GetField<string>(4), "yyyy-MM-dd-HH.mm.ss.FFFFFF", culture.DateTimeFormat);
+                ValutaDate = DateTime.SpecifyKind(
+                    DateTime.ParseExact(
+                        reader.GetField<string>(4), 
+                        "yyyy-MM-dd-HH.mm.ss.FFFFFF", 
+                        culture.DateTimeFormat
+                    ), 
+                    DateTimeKind.Utc
+                );
             } catch(FormatException) {
                 ValutaDate = default(DateTime);
             }
@@ -52,10 +59,13 @@ namespace FinTransConverterLib.Transactions {
 
             // Accounting and valuta date.
             try {
-                var date = DateTime.ParseExact(
-                    HtmlEntity.DeEntitize(cells[1].InnerText).RemoveWhitespaces(), 
-                    "dd.MM.yyyy", 
-                    culture.DateTimeFormat
+                var date = DateTime.SpecifyKind(
+                    DateTime.ParseExact(
+                        HtmlEntity.DeEntitize(cells[1].InnerText).RemoveWhitespaces(), 
+                        "dd.MM.yyyy", 
+                        culture.DateTimeFormat
+                    ), 
+                    DateTimeKind.Utc
                 );
 
                 AccountingDate = date;

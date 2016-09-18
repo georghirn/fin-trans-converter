@@ -94,7 +94,11 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             
             using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesCsvFile))) {
                 using(var writer = new CsvWriter(output)) {
+                    ConfigureCsv(writer.Configuration);
+
                     HomeBankTransaction.WriteCsvHeader(writer);
+                    writer.NextRecord();
+
                     foreach(var transaction in duplicates) {
                         transaction.WriteCsv(writer, culture);
                         writer.NextRecord();
@@ -114,7 +118,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     "Duplicates for target: {1}" + Environment.NewLine + 
                     "---------------------------------------------------------------------" + Environment.NewLine + 
                     "Duplicate transactions:", 
-                    (new DateTime()).ToString(), path
+                    DateTime.Now.ToString(culture), path
                 ));
                 foreach(var transaction in duplicates) {
                     if(duplicates.LastOrDefault().Equals(transaction)) {
