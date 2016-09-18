@@ -41,11 +41,13 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
 
         public HBAccount TargetAccount { get; private set; }
         private string TargetAccountPattern;
+        private bool AppendDuplicates;
 
         internal int MaxStrongLinkId { get; set; }
         
-        public HomeBank(eFinanceEntityType entityType, CultureInfo ci = null, string accountPattern = null) : 
+        public HomeBank(eFinanceEntityType entityType, bool appendDuplicates = false, CultureInfo ci = null, string accountPattern = null) : 
             base (suppReadFileTypes, suppWriteFileTypes, entityType) {
+            AppendDuplicates = appendDuplicates;
             culture = ci ?? (ci = CultureInfo.InvariantCulture);
             duplicates = new List<HomeBankTransaction>();
             Payees = new List<HBPayee>();
@@ -86,13 +88,15 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         }
 
         protected override void WriteFailed(string path) {
+            FileMode mode = (AppendDuplicates) ? FileMode.Append : FileMode.OpenOrCreate;
+
             // Writecsv file with duplicates.
             string duplicatesCsvFile = String.Format("{0}{1}{2}.duplicates.csv", 
                 Path.GetDirectoryName(path), 
                 Path.DirectorySeparatorChar, 
                 Path.GetFileNameWithoutExtension(path));
             
-            using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesCsvFile))) {
+            using(StreamWriter output = new StreamWriter(File.Open(duplicatesCsvFile, mode, FileAccess.Write, FileShare.None))) {
                 using(var writer = new CsvWriter(output)) {
                     ConfigureCsv(writer.Configuration);
 
@@ -112,7 +116,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                 Path.DirectorySeparatorChar, 
                 Path.GetFileNameWithoutExtension(path));
             
-            using(StreamWriter output = new StreamWriter(File.OpenWrite(duplicatesTextFile))) {
+            using(StreamWriter output = new StreamWriter(File.Open(duplicatesTextFile, mode, FileAccess.Write, FileShare.None))) {
                 output.WriteLine(String.Format(
                     "Timestamp: {0}" + Environment.NewLine + 
                     "Duplicates for target: {1}" + Environment.NewLine + 

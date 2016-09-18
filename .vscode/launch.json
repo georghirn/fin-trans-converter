@@ -9,12 +9,13 @@
          "program": "${workspaceRoot}/src/finTransConverter/bin/Debug/netcoreapp1.0/FinTransConverter.dll",
          "args": [
              "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/test/test-creditcard.html", 
-             "/home/georg/Dokumente/Finanzen/HomeBank/test/GeorgHirn_Finanzen-2.xhb", 
+             "/home/georg/Dokumente/Finanzen/Homebank/test/GeorgHirn_Finanzen-2.xhb", 
              "HelloBankToHomebank",
              "-v",
              "--account-type=CreditCardAccount",
-             //"--homebank-settings-file=/home/georg/Dokumente/Finanzen/HomeBank/GeorgHirn_Finanzen.xhb",
-             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/HomeBank/settings/hellobank_kreditkarte_paymode_patterns.xpmp", 
+             "--append-duplicates", 
+             //"--homebank-settings-file=/home/georg/Dokumente/Finanzen/Homebank/GeorgHirn_Finanzen.xhb",
+             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_kreditkarte_paymode_patterns.xpmp", 
              "--target-account-pattern=\".*credit.*card.*\""
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",

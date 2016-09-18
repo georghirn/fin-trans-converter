@@ -25,7 +25,12 @@ namespace FinTransConverter {
                 switch(parsedArgs.ConversionType) {
                     case eConversionType.HelloBankToHomebank:
                         fromEntity = new HelloBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"));
-                        toEntity = new HomeBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"), parsedArgs.TargetAccountPattern);
+                        toEntity = new HomeBank(
+                            parsedArgs.FinanceEntity, 
+                            parsedArgs.OptAppendDuplicates, 
+                            new CultureInfo("de-at"), 
+                            parsedArgs.TargetAccountPattern
+                        );
                         break;
                     default:
                         throw new NotSupportedException(

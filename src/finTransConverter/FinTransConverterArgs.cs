@@ -37,6 +37,7 @@ namespace FinTransConverter {
             "   -a=ACCOUNTPATTERN, --target-account-pattern=ACCOUNTPATTERN Defines the account for the transactions." + Environment.NewLine + 
             "      The account will be parsed from the Hombank settings file with the pattern. Only valid if the " + Environment.NewLine + 
             "      target is a Homebank settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine + 
+            "   -d, --append-duplicates  Append new duplicates to duplicates file instead of overriding." + Environment.NewLine + 
             "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
             "      the following types are supported:" + Environment.NewLine + 
             GetFinanceEntityTypesDescription() + Environment.NewLine;
@@ -80,6 +81,8 @@ namespace FinTransConverter {
       public bool OptVersion { get { return _args["--version"].IsTrue; } }
 
       public bool OptVerbose { get { return _args["--verbose"].IsTrue; } }
+
+      public bool OptAppendDuplicates { get { return _args["--append-duplicates"].IsTrue; } }
 
       public string HomebankSettingsFile { get { return GetStringValue("--homebank-settings-file"); } }
 
