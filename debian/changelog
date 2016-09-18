@@ -1,3 +1,11 @@
+fin-trans-converter (0.0.7-1ubuntu1) xenial; urgency=medium
+
+  * Added option to add duplicates to duplicates file. When this option is 
+    present, then duplicate transactions will be added to existing duplicate 
+    files instead of overrideing existing duplicate files.
+
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Sun, 18 Sep 2016 18:39:37 +0200
+
 fin-trans-converter (0.0.6-1ubuntu1) xenial; urgency=medium
 
   * Support for Hellobank credit card accounts html. Transactions can now be 
