@@ -43,7 +43,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
 
         internal int MaxStrongLinkId { get; set; }
         
-        public HomeBank(CultureInfo ci = null, string accountPattern = null) : base (suppReadFileTypes, suppWriteFileTypes) {
+        public HomeBank(eFinanceEntityType entityType, CultureInfo ci = null, string accountPattern = null) : 
+            base (suppReadFileTypes, suppWriteFileTypes, entityType) {
             culture = ci ?? (ci = CultureInfo.InvariantCulture);
             duplicates = new List<HomeBankTransaction>();
             Payees = new List<HBPayee>();

@@ -25,7 +25,7 @@ namespace FinTransConverter {
                 switch(parsedArgs.ConversionType) {
                     case eConversionType.HelloBankToHomebank:
                         fromEntity = new HelloBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"));
-                        toEntity = new HomeBank(new CultureInfo("de-at"), parsedArgs.TargetAccountPattern);
+                        toEntity = new HomeBank(parsedArgs.FinanceEntity, new CultureInfo("de-at"), parsedArgs.TargetAccountPattern);
                         break;
                     default:
                         throw new NotSupportedException(
@@ -73,8 +73,9 @@ namespace FinTransConverter {
 
                 Console.WriteLine("Finished");
             } catch(Exception ex) {
-                Console.WriteLine(ex.Message);
                 if(parsedArgs.OptVerbose) Console.WriteLine(ex.ToString());
+                else Console.WriteLine(ex.Message);
+                
                 Console.WriteLine("Failed");
                 Environment.Exit(1);
             }

@@ -20,11 +20,33 @@ namespace FinTransConverterLib.FinanceEntities {
 
     public abstract class FinanceEntity : IFinanceEntity {
         protected static readonly Dictionary<eFileTypes, FileType> PossibleFileTypes = new Dictionary<eFileTypes, FileType>() {
-            { eFileTypes.Csv, new FileType() { Id = eFileTypes.Csv, Extension = ".csv", Description = "comma seperated values" } }, 
-            { eFileTypes.Xhb, new FileType() { Id = eFileTypes.Xhb, Extension = ".xhb", Description = "Homebank xml settings file" } }, 
-            { eFileTypes.PaymodePatterns, new FileType() { Id = eFileTypes.PaymodePatterns, Extension = ".xpmp", Description = "paymode patterns file" } }
+            { 
+                eFileTypes.Csv, new FileType() { 
+                    Id = eFileTypes.Csv, 
+                    Extension = ".csv", 
+                    Description = "comma seperated values" 
+                } 
+            }, { 
+                eFileTypes.Html, new FileType() { 
+                    Id = eFileTypes.Html, 
+                    Extension = ".html", 
+                    Description = "hyper text markup language" 
+                }
+            }, { 
+                eFileTypes.PaymodePatterns, new FileType() { 
+                    Id = eFileTypes.PaymodePatterns, 
+                    Extension = ".xpmp", 
+                    Description = "paymode patterns file" 
+                } 
+            }, { 
+                eFileTypes.Xhb, new FileType() { 
+                    Id = eFileTypes.Xhb, 
+                    Extension = ".xhb", 
+                    Description = "Homebank xml settings file" 
+                } 
+            }
         };
-
+        
         public Dictionary<eFileTypes, FileType> SupportedReadFileTypes { get; private set; }
 
         public Dictionary<eFileTypes, FileType> SupportedWriteFileTypes { get; private set; }
@@ -130,8 +152,9 @@ namespace FinTransConverterLib.FinanceEntities {
 
     public enum eFileTypes {
         Csv, 
-        Xhb, 
-        PaymodePatterns
+        Html,
+        PaymodePatterns,
+        Xhb
     }
 
     public enum eFinanceEntityType {

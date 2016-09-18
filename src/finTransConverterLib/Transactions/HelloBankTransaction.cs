@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using CsvHelper;
+using HtmlAgilityPack;
+using FinTransConverterLib.Helpers;
 using FinTransConverterLib.FinanceEntities;
 
 namespace FinTransConverterLib.Transactions {
@@ -36,7 +39,93 @@ namespace FinTransConverterLib.Transactions {
             Memo                = reader.GetField<string>(9);
         }
 
-        //public void 
+        public bool ParseHtml(HtmlNode tableRow, CultureInfo culture, eFinanceEntityType entityType) {
+            var cells = tableRow.ChildNodes?.Where(cn => cn.Name.Equals("td"));
+
+            if(cells == null || cells.Count != 6) {
+                // Transaction should be ignored.
+                return true;
+            }
+
+            // Payment reference.
+            PaymentReference = HtmlEntity.DeEntitize(cells[0].InnerText);
+
+            // Accounting and valuta date.
+            try {
+                var date = DateTime.ParseExact(
+                    HtmlEntity.DeEntitize(cells[1].InnerText).RemoveWhitespaces(), 
+                    "dd.MM.yyyy", 
+                    culture.DateTimeFormat
+                );
+
+                AccountingDate = date;
+                ValutaDate = date;
+            } catch(FormatException) {
+                AccountingDate = default(DateTime);
+                ValutaDate = default(DateTime);
+            }
+            
+            // Memo and accounting text.
+            Memo = HtmlEntity.DeEntitize(cells[2].InnerText);
+
+            if(entityType == eFinanceEntityType.CreditCardAccount) {
+                // Check if the transaction should be ignored.
+                var ignoreRegex = new Regex(
+                    ".*Saldo.*aus.*Abrechnung.*vom.*", 
+                    RegexOptions.IgnoreCase);
+                if(ignoreRegex.Match(Memo).Success) {
+                    // Transaction should be ignored.
+                    return true;
+                }
+
+                // Try to determine accounting text.
+                var regex = new Regex("EINZUG.*PAYLIFE", RegexOptions.IgnoreCase);
+                if(regex.Match(Memo).Success) {
+                    AccountingText = "SEPA credit transfer";
+                } else {
+                    AccountingText = "credit card";
+                }
+            }
+            
+            // Foreign currency amount, will be ignored. 
+            //cells[3].InnerText;
+
+            // Conversion rate, will be ignored.
+            //cells[4].InnerText;
+
+            // Currency and amount.
+            var xmlNumberFormatInfo = culture.NumberFormat.Clone() as NumberFormatInfo;
+            xmlNumberFormatInfo.NumberDecimalSeparator = ",";
+            xmlNumberFormatInfo.NumberGroupSeparator = ".";
+
+            var amountDivNode = cells[5].Element("div");
+            if(amountDivNode != null) {
+                var amountChildNodes = amountDivNode.ChildNodes;
+                if(amountChildNodes.Count != 2) {
+                    // Transaction should be ignored.
+                    return true;
+                }
+
+                foreach(var node in amountChildNodes) {
+                    if(node.NodeType == HtmlNodeType.Element) {
+                        Currency = HtmlEntity.DeEntitize(node.InnerText).RemoveWhitespaces();
+                    }
+
+                    if(node.NodeType == HtmlNodeType.Text) {
+                        Amount = Convert.ToDouble(
+                            HtmlEntity.DeEntitize(node.InnerText).RemoveWhitespaces(), 
+                            xmlNumberFormatInfo
+                        );
+                    }
+                }
+            } else {
+                // Transaction should be ignored.
+                return true;
+            }
+
+            return false; // Transaction should not be ignored.
+        }
+
         public override string ToString() {
             return String.Format(
                 "|-- Iban = {0}" + Environment.NewLine + 

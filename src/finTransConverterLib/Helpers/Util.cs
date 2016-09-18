@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
+using HtmlAgilityPack;
 
 namespace FinTransConverterLib.Helpers {
    public static class Util {
@@ -29,7 +30,7 @@ namespace FinTransConverterLib.Helpers {
    }
 
    public static class StringExtensions {
-      public static String Indent(this String str, string indent) {
+      public static String Indent(this String str, String indent) {
          string target = "";
          var splitString = str.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
          
@@ -51,6 +52,14 @@ namespace FinTransConverterLib.Helpers {
 
          throw new KeyNotFoundException("The string does not match with an enum value.");
       }
+
+      public static String RemoveWhitespaces(this String str) {
+          return new String(str
+              .ToCharArray()
+              .Where(c => Char.IsWhiteSpace(c) == false)
+              .ToArray()
+          );
+      }
    }
 
     public static class DateTimeExtensions {
@@ -69,6 +78,14 @@ namespace FinTransConverterLib.Helpers {
             double unixTime = Math.Floor(diff.TotalSeconds);
             UInt32 julianDate = (UInt32)(Math.Floor(unixTime / 86400) + JulianUnixZero);
             return julianDate;
+        }
+    }
+
+    public static class HtmlNodeCollectionExtensions {
+        public static List<HtmlNode> Where(this HtmlNodeCollection source, Func<HtmlNode, bool> predicate) {
+            var list = new List<HtmlNode>();
+            foreach(var node in source) if(predicate(node)) list.Add(node);
+            return list;
         }
     }
 }

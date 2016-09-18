@@ -19,7 +19,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         }
 
         public void ParseXmlElement(XmlReader reader) {
-            // Firt parse type attribute.
+            // First parse type attribute.
             if(!reader.HasAttributes) {
                 throw new InvalidOperationException(String.Format("Failed to parse xml node {0}, could not find the type attribute.", reader.Name));
             }

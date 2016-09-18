@@ -8,14 +8,14 @@
          "preLaunchTask": "build",
          "program": "${workspaceRoot}/src/finTransConverter/bin/Debug/netcoreapp1.0/FinTransConverter.dll",
          "args": [
-             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/test/umsaetze-giro-1.csv", 
-             "/home/georg/Dokumente/Finanzen/HomeBank/test/GeorgHirn_Finanzen-1.xhb", 
+             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/test/test-creditcard.html", 
+             "/home/georg/Dokumente/Finanzen/HomeBank/test/GeorgHirn_Finanzen-2.xhb", 
              "HelloBankToHomebank",
              "-v",
-             "--account-type=CheckAccount",
+             "--account-type=CreditCardAccount",
              //"--homebank-settings-file=/home/georg/Dokumente/Finanzen/HomeBank/GeorgHirn_Finanzen.xhb",
-             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/HomeBank/settings/hellobank_girokonto_paymode_patterns.xpmp", 
-             "--target-account-pattern=\"Girokonto.*Hello.*Bank\""
+             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/HomeBank/settings/hellobank_kreditkarte_paymode_patterns.xpmp", 
+             "--target-account-pattern=\".*credit.*card.*\""
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",
          "stopAtEntry": false,
