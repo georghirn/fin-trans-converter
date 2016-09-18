@@ -206,17 +206,24 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                 foreach(var transaction in Transactions) {
                     hbTransaction = transaction as HomeBankTransaction;
                     
+                    // Only add if transaction is not a duplicate.
                     if(hbTransaction.IsDuplicate(ExistingTransactions)) {
                         duplicates.Add(hbTransaction);
                     } else {
+                        // Transaction is not a duplicate.
                         previous = hbTransaction.GetPreviousXmlElement(current);
                         previous = homebank.InsertAfter(hbTransaction.CreateXmlElement(doc), previous);
 
                         if(hbTransaction.Paymode == ePaymodeType.BetweenAccounts) {
-                            var element = HomeBankTransaction
-                                .CreateLinkedTransaction(hbTransaction, culture)
-                                .CreateXmlElement(doc);
-                            previous = homebank.InsertAfter(element, previous);
+                            var linkedTrans = HomeBankTransaction.CreateLinkedTransaction(hbTransaction, culture);
+                            // Only add if transaction is not a duplicate.
+                            if(linkedTrans.IsDuplicate(ExistingTransactions)) {
+                                duplicates.Add(linkedTrans);
+                            } else {
+                                // Transaction is not a duplicate.
+                                var element = linkedTrans.CreateXmlElement(doc);
+                                previous = homebank.InsertAfter(element, previous);
+                            }
                         }
 
                         current = previous;
