@@ -133,17 +133,35 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             duplicates.Clear();
 
             using(var writer = new CsvWriter(output)) {
+                HomeBankTransaction hbTransaction;
                 ConfigureCsv(writer.Configuration);
 
                 HomeBankTransaction.WriteCsvHeader(writer);
                 writer.NextRecord();
 
                 foreach(var transaction in Transactions) {
+                    hbTransaction = transaction as HomeBankTransaction;
+
+                    // Only add if transaction is not a duplicate.
                     if(transaction.IsDuplicate(ExistingTransactions)) {
-                        duplicates.Add(transaction as HomeBankTransaction);
+                        duplicates.Add(hbTransaction);
                     } else {
-                        (transaction as HomeBankTransaction).WriteCsv(writer, culture);
+                        // Transaction is not a duplicate.
+                        hbTransaction.WriteCsv(writer, culture);
                         writer.NextRecord();
+
+                        // If paymode is between accounts create a linked transaction.
+                        if(hbTransaction.Paymode == ePaymodeType.BetweenAccounts) {
+                            var linkedTrans = HomeBankTransaction.CreateLinkedTransaction(hbTransaction, culture);
+                            // Only add if transaction is not a duplicate.
+                            if(linkedTrans.IsDuplicate(ExistingTransactions)) {
+                                duplicates.Add(linkedTrans);
+                            } else {
+                                // Transaction is not a duplicate.
+                                hbTransaction.WriteCsv(writer, culture);
+                                writer.NextRecord();
+                            }
+                        }
                     }
                 }
             }
@@ -241,7 +259,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                         // Transaction is not a duplicate.
                         previous = hbTransaction.GetPreviousXmlElement(current);
                         previous = homebank.InsertAfter(hbTransaction.CreateXmlElement(doc), previous);
-
+                        
+                        // If paymode is between accounts create a linked transaction.
                         if(hbTransaction.Paymode == ePaymodeType.BetweenAccounts) {
                             var linkedTrans = HomeBankTransaction.CreateLinkedTransaction(hbTransaction, culture);
                             // Only add if transaction is not a duplicate.
