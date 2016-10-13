@@ -61,25 +61,57 @@ namespace FinTransConverterLib.Transactions {
             if(transactions == null) throw new ArgumentNullException("transactions");
             bool isDuplicate = false;
 
-            foreach(var transaction in transactions) {
-                var trans = transaction as HomeBankTransaction;
+            if(Paymode == ePaymodeType.BetweenAccounts && DestinationAccount != null) {
+                var minDate = Date.Date.AddDays(-2);
+                var maxDate = Date.Date.AddDays(2);
 
-                isDuplicate = Date.Date.Equals(trans.Date.Date);
-                isDuplicate &= Amount.Equals(trans.Amount);
-                isDuplicate &= Memo.Equals(trans.Memo);
-                isDuplicate &= Info.Equals(trans.Info);
-                
-                /*if(Date.Date.Equals(trans.Date.Date)) {
-                    Console.WriteLine("Date EQU / Amount {0} / Memo {1} / Info {2} / IsDuplicate: {3}", 
-                    Amount.Equals(trans.Amount) ? "EQU" : "NOT", 
-                    Memo.Equals(trans.Memo) ? "EQU" : "NOT", 
-                    Info.Equals(trans.Info) ? "EQU" : "NOT", 
-                    isDuplicate ? "true" : "false");
-                }*/
+                foreach(var transaction in transactions) {
+                    var trans = transaction as HomeBankTransaction;
 
-                if(isDuplicate) break;
+                    if(trans.Paymode == ePaymodeType.BetweenAccounts) {
+                        isDuplicate = trans.Date.Date >= minDate && trans.Date.Date <= maxDate;
+                        isDuplicate &= Amount.Equals(trans.Amount);
+
+                        isDuplicate &= Account != null;
+                        isDuplicate &= trans.Account != null;
+                        isDuplicate &= Account.Key == trans.Account.Key;
+
+                        isDuplicate &= DestinationAccount != null;
+                        isDuplicate &= trans.DestinationAccount != null;
+                        isDuplicate &= DestinationAccount.Key == trans.DestinationAccount.Key;
+                    }
+
+                    /*if(Date.Date.Equals(trans.Date.Date)) {
+                        Console.WriteLine("Date EQU / Amount {0} / Memo {1} / Info {2} / IsDuplicate: {3}", 
+                        Amount.Equals(trans.Amount) ? "EQU" : "NOT", 
+                        Memo.Equals(trans.Memo) ? "EQU" : "NOT", 
+                        Info.Equals(trans.Info) ? "EQU" : "NOT", 
+                        isDuplicate ? "true" : "false");
+                    }*/
+
+                    if(isDuplicate) break;
+                }
+            } else {
+                foreach(var transaction in transactions) {
+                    var trans = transaction as HomeBankTransaction;
+
+                    isDuplicate = Date.Date.Equals(trans.Date.Date);
+                    isDuplicate &= Amount.Equals(trans.Amount);
+                    isDuplicate &= Memo.Equals(trans.Memo);
+                    isDuplicate &= Info.Equals(trans.Info);
+                    
+                    /*if(Date.Date.Equals(trans.Date.Date)) {
+                        Console.WriteLine("Date EQU / Amount {0} / Memo {1} / Info {2} / IsDuplicate: {3}", 
+                        Amount.Equals(trans.Amount) ? "EQU" : "NOT", 
+                        Memo.Equals(trans.Memo) ? "EQU" : "NOT", 
+                        Info.Equals(trans.Info) ? "EQU" : "NOT", 
+                        isDuplicate ? "true" : "false");
+                    }*/
+
+                    if(isDuplicate) break;
+                }
             }
-            
+
             return isDuplicate;
         }
 
@@ -96,17 +128,25 @@ namespace FinTransConverterLib.Transactions {
                 Account = hb.TargetAccount;
                 Status = (trans.ValutaDate.Equals(default(DateTime))) ? eTransactionStatus.Cleared : eTransactionStatus.Reconciled;
 
-                var assignment = TryResolveAssignment(trans.Memo, hb);
-                if(assignment != null) {
-                    Payee = assignment.Payee;
-                    Category = assignment.Category;
+                // Try to resolve category and payee.
+                HBCategory category; 
+                HBPayee payee;
+                if(TryResolveTransactionAssignment(hb, trans.Memo, out category, out payee)) {
+                    Category = category;
+                    Payee = payee;
+                } else if(category == null || payee == null) {
+                    var assignment = TryResolveHomebankAssignment(trans.Memo, hb);
+                    if(assignment != null) {
+                        Payee = payee ?? assignment.Payee;
+                        Category = category ?? assignment.Category;
+                    }
                 }
 
                 Memo = (trans.PaymentReference.Length > 0) ? String.Format("[Ref: {0}] {1}", trans.PaymentReference, trans.Memo) : trans.Memo;
                 Info = trans.AccountingText;
                 
                 // Parse paymode infos from paymode patterns file.
-                var pmInfo = TryFindPaymode(feFrom, hb); // Memo and Info have to be set before.
+                var pmInfo = TryFindPaymodePattern(feFrom, hb); // Memo and Info have to be set before.
                 Paymode = pmInfo?.Paymode ?? ePaymodeType.Unknown;
 
                 // Check if paymode type is between accounts and if so do some further processing.
@@ -144,7 +184,18 @@ namespace FinTransConverterLib.Transactions {
             return hb.Payees.Find(p => (new Regex(p.Name.Replace(" ", ".*"), RegexOptions.IgnoreCase)).Match(searchText).Success);
         }
 
-        private HBAssignment TryResolveAssignment(string searchText, HomeBank hb) {
+        private bool TryResolveTransactionAssignment(HomeBank hb, string searchText, out HBCategory category, out HBPayee payee) {
+            category = null;
+            payee = null;
+            
+            foreach(var tasg in hb.TransactionAssignments) {
+                if(tasg.IsMatch(searchText, out category, out payee)) return true;
+            }
+
+            return false;
+        }
+
+        private HBAssignment TryResolveHomebankAssignment(string searchText, HomeBank hb) {
             if(hb == null) return null;
             return hb.Assignments.Find(asg => {
                 var pattern = asg.Name.Replace(" ", ".*");
@@ -159,7 +210,7 @@ namespace FinTransConverterLib.Transactions {
             public string TagsString { get; set; }
         }
 
-        private ParsedPaymodeInfo TryFindPaymode(IFinanceEntity feFrom, HomeBank hb) {
+        private ParsedPaymodeInfo TryFindPaymodePattern(IFinanceEntity feFrom, HomeBank hb) {
             ePaymodeType pType = ePaymodeType.Unknown;
             string destAccPattern = null;
             string tagsStr = null;

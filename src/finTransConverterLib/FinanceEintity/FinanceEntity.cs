@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using FinTransConverterLib.Transactions;
+using FinTransConverterLib.FinanceEntities.Homebank;
 
 namespace FinTransConverterLib.FinanceEntities {
     public interface IFinanceEntity {
@@ -35,14 +36,20 @@ namespace FinTransConverterLib.FinanceEntities {
             }, { 
                 eFileTypes.PaymodePatterns, new FileType() { 
                     Id = eFileTypes.PaymodePatterns, 
-                    Extension = ".xpmp", 
-                    Description = "paymode patterns file" 
+                    Extension = HBPaymodePatterns.Extension, 
+                    Description = HBPaymodePatterns.Description 
                 } 
             }, { 
                 eFileTypes.Xhb, new FileType() { 
                     Id = eFileTypes.Xhb, 
                     Extension = ".xhb", 
                     Description = "Homebank xml settings file" 
+                } 
+            }, { 
+                eFileTypes.TransactionAssignments, new FileType() { 
+                    Id = eFileTypes.TransactionAssignments, 
+                    Extension = HBTransactionAssignment.Extension, 
+                    Description = HBTransactionAssignment.Description 
                 } 
             }
         };
@@ -154,7 +161,8 @@ namespace FinTransConverterLib.FinanceEntities {
         Csv, 
         Html,
         PaymodePatterns,
-        Xhb
+        Xhb, 
+        TransactionAssignments
     }
 
     public enum eFinanceEntityType {

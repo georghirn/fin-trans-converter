@@ -8,15 +8,17 @@
          "preLaunchTask": "build",
          "program": "${workspaceRoot}/src/finTransConverter/bin/Debug/netcoreapp1.0/FinTransConverter.dll",
          "args": [
-             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/test/test-creditcard.html", 
-             "/home/georg/Dokumente/Finanzen/Homebank/test/GeorgHirn_Finanzen-2.xhb", 
+             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/Kreditkarte/2016/HelloBank-kreditkarte_2016-09_bis_2016-09-18.html", 
+             "/home/georg/Dokumente/Finanzen/Homebank/test/georg-hirn-finanzen-ab-2016-01-01.xhb", 
              "HelloBankToHomebank",
-             "-v",
+             "--verbose",
              "--account-type=CreditCardAccount",
              "--append-duplicates", 
+             "--check-only",
              //"--homebank-settings-file=/home/georg/Dokumente/Finanzen/Homebank/GeorgHirn_Finanzen.xhb",
              "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_kreditkarte_paymode_patterns.xpmp", 
-             "--target-account-pattern=\".*credit.*card.*\""
+             "--transaction-assignments-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_transaction_assignments.xtasg", 
+             "--target-account-pattern=\".*Kreditkarte.*Hello.*Bank.*\""
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",
          "stopAtEntry": false,

@@ -6,6 +6,8 @@ using FinTransConverterLib.Helpers;
 
 namespace FinTransConverterLib.FinanceEntities.Homebank {
     public class HBPaymodePatterns {
+        public const string Extension = ".xpmp";
+        public const string Description = "xml paymode patterns file";
         public const string XmlTagName = "paymodepatterns";
 
         public const string AttrPaymode = "type";

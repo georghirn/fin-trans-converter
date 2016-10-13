@@ -25,8 +25,9 @@ namespace FinTransConverter {
             GetConversionTypesDescription() + Environment.NewLine + 
             "OPTIONS:" + Environment.NewLine + 
             "   -h, --help     Display this help and exit." + Environment.NewLine + 
-            "   --version      Output version information and exit." + Environment.NewLine + 
+            "   -V, --version  Output version information and exit." + Environment.NewLine + 
             "   -v, --verbose  Be more verbose." + Environment.NewLine + 
+            "   -c, --check-only  Will only check for validty, nothing will be written to the target." + Environment.NewLine + 
             "   --homebank-settings-file=HOMEBANKSETTINGS  Only valid when target conversion is a Hombank format." + Environment.NewLine + 
             "      Use this option to import a Homebank settings file (*.xhb). This will be parsed and used to" + Environment.NewLine + 
             "      refine the conversion, e.g. for automatic transaction assignment. If the target is a Hombank" + Environment.NewLine + 
@@ -37,6 +38,12 @@ namespace FinTransConverter {
             "   -a=ACCOUNTPATTERN, --target-account-pattern=ACCOUNTPATTERN Defines the account for the transactions." + Environment.NewLine + 
             "      The account will be parsed from the Hombank settings file with the pattern. Only valid if the " + Environment.NewLine + 
             "      target is a Homebank settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine + 
+            "   -g=TRANSACTIONASSIGNMENT, --transaction-assignments-file=TRANSACTIONASSIGNMENT Use this option to " + Environment.NewLine + 
+            "      import a transaction assignemnts xml file (*.tasg). The definitions in the fiel will be parsed and" + Environment.NewLine + 
+            "      used to refine the conversion. Specifically for assigning payee and category to each transaction." + Environment.NewLine + 
+            "      The definitions in this file will take precedence before the assignments of the homebank settings" + Environment.NewLine + 
+            "      file, because they are more accurate. This option is only valid if the target is a Homebank " + Environment.NewLine + 
+            "      settings file (*.xhb) or if the --homebank-settings-file option is used." + Environment.NewLine + 
             "   -d, --append-duplicates  Append new duplicates to duplicates file instead of overriding." + Environment.NewLine + 
             "   -t=ACCOUNTTYPE, --account-type=ACCOUNTTYPE  [default: Unknown] The account (finance entity) type," + Environment.NewLine + 
             "      the following types are supported:" + Environment.NewLine + 
@@ -64,11 +71,14 @@ namespace FinTransConverter {
               "  -> target file: {1}" + Environment.NewLine + 
               "  -> conversion type: {2}" + Environment.NewLine + 
               "  -> account type: {3}" + Environment.NewLine + 
-              "{4}{5}{6}{7}", 
+              "{4}{5}{6}{7}{8}{9}", 
               SourceFile, TargetFile, ConversionType.ToString(), FinanceEntity.ToString(), 
               (OptVerbose) ? "  -> be verbose" + Environment.NewLine : "", 
+              (OptCheckOnly) ? "  -> only check for validity" + Environment.NewLine : "", 
+              (OptAppendDuplicates) ? "  -> append duplicates" + Environment.NewLine : "", 
               (HomebankSettingsFile != string.Empty) ? "  -> homebank settings file: " + HomebankSettingsFile + Environment.NewLine : "", 
               (PaymodePatternsFile != string.Empty) ? "  -> paymode patterns file: " + PaymodePatternsFile + Environment.NewLine : "", 
+              (TransactionAssignmentsFile != string.Empty) ? "  -> transaction assignments file: " + TransactionAssignmentsFile + Environment.NewLine : "", 
               (TargetAccountPattern != string.Empty) ? "  -> target account pattern: " + TargetAccountPattern + Environment.NewLine : "");
       }
 
@@ -82,6 +92,8 @@ namespace FinTransConverter {
 
       public bool OptVerbose { get { return _args["--verbose"].IsTrue; } }
 
+      public bool OptCheckOnly { get { return _args["--check-only"].IsTrue; } }
+
       public bool OptAppendDuplicates { get { return _args["--append-duplicates"].IsTrue; } }
 
       public string HomebankSettingsFile { get { return GetStringValue("--homebank-settings-file"); } }
@@ -89,6 +101,8 @@ namespace FinTransConverter {
       public string PaymodePatternsFile { get { return GetStringValue("--paymode-patterns-file"); } }
 
       public string TargetAccountPattern { get { return GetStringValue("--target-account-pattern"); } }
+
+      public string TransactionAssignmentsFile { get { return GetStringValue("--transaction-assignments-file"); } }
       
       public eFinanceEntityType FinanceEntity { get; private set; }
 

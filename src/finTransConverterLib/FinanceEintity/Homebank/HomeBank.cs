@@ -16,7 +16,8 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         // supported read file types
         private static readonly List<FileType> suppReadFileTypes = new List<FileType> { 
             FinanceEntity.PossibleFileTypes[eFileTypes.Xhb], 
-            FinanceEntity.PossibleFileTypes[eFileTypes.PaymodePatterns] 
+            FinanceEntity.PossibleFileTypes[eFileTypes.PaymodePatterns], 
+            FinanceEntity.PossibleFileTypes[eFileTypes.TransactionAssignments]
         };
 
         // supported write file types
@@ -37,6 +38,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
         public List<HBAssignment> Assignments { get; private set; }
         public List<HBTag> Tags { get; private set; }
         public List<HBPaymodePatterns> PaymodePatterns { get; private set; }
+        public List<HBTransactionAssignment> TransactionAssignments { get; private set; }
         public List<HomeBankTransaction> ExistingTransactions { get; private set; }
 
         public HBAccount TargetAccount { get; private set; }
@@ -56,6 +58,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
             Tags = new List<HBTag>();
             Accounts = new List<HBAccount>();
             PaymodePatterns = new List<HBPaymodePatterns>();
+            TransactionAssignments = new List<HBTransactionAssignment>();
             ExistingTransactions = new List<HomeBankTransaction>();
             TargetAccountPattern = accountPattern ?? string.Empty;
             TargetAccount = null;
@@ -66,6 +69,7 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                 switch(fileType.Id) {
                     case eFileTypes.Xhb: ParseHombankSettingsFile(reader); break;
                     case eFileTypes.PaymodePatterns: ParsePaymodePatternsFile(reader); break;
+                    case eFileTypes.TransactionAssignments: ParseTransactionAssignments(reader); break;
                 }
             }
         }
@@ -318,6 +322,23 @@ namespace FinTransConverterLib.FinanceEntities.Homebank {
                     .OrderBy((pt) => pt.Patterns.FirstOrDefault()?.Level ?? uint.MaxValue)
                     .ToList();
             }
+        }
+
+        private void ParseTransactionAssignments(TextReader input) {
+            using(XmlReader reader = XmlReader.Create(input)) {
+                reader.ReadToFollowing(HBTransactionAssignment.XmlRootTagName);
+                while(reader.Read()) {
+                    if(reader.NodeType == XmlNodeType.Element && reader.Name.Equals(HBTransactionAssignment.XmlTagName)) {
+                        var tasg = new HBTransactionAssignment();
+                        tasg.ParseXmlElement(reader, this);
+                        TransactionAssignments.Add(tasg);
+                    }
+                }
+            }
+
+            TransactionAssignments = TransactionAssignments
+                .OrderBy(tasg => tasg.Category?.Key ?? 0)
+                .ToList();
         }
 
         private void ParseHombankSettingsFile(TextReader input) {

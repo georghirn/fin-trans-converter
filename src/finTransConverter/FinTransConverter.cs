@@ -41,14 +41,18 @@ namespace FinTransConverter {
                 fromEntity.FileCheckAndReadIfSupported(eFileTypes.Csv, parsedArgs.SourceFile);
                 Console.WriteLine("Successfully parsed source file.");
 
+                bool isValidForTransactionAssignmentsFile = false;
+
                 if(parsedArgs.HomebankSettingsFile != string.Empty) {
                     toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.HomebankSettingsFile);
                     Console.WriteLine("Homebank settings file successfully parsed.");
+                    isValidForTransactionAssignmentsFile = true;
                 }
 
                 if(Path.GetExtension(parsedArgs.TargetFile).Equals(toEntity.SupportedReadFileTypes[eFileTypes.Xhb].Extension)) {
                     toEntity.FileCheckAndReadIfSupported(eFileTypes.Xhb, parsedArgs.TargetFile);
                     Console.WriteLine("Homebank settings file successfully parsed.");
+                    isValidForTransactionAssignmentsFile = true;
                 }
 
                 if(parsedArgs.PaymodePatternsFile != string.Empty) {
@@ -56,10 +60,24 @@ namespace FinTransConverter {
                     Console.WriteLine("Paymode patterns file successfully parsed.");
                 }
 
+                if(parsedArgs.TransactionAssignmentsFile != string.Empty) {
+                    if(isValidForTransactionAssignmentsFile) {
+                        toEntity.FileCheckAndReadIfSupported(eFileTypes.TransactionAssignments, parsedArgs.TransactionAssignmentsFile);
+                        Console.WriteLine("Transaction assignments file successfully parsed.");
+                    } else {
+                        throw new InvalidOperationException(
+                            "Failed to parse transaction assignments file, because of missing homebank settings file."
+                        );
+                    }
+                }
+
                 toEntity.Convert(fromEntity);
                 Console.WriteLine("Successfully performed conversion.");
-                toEntity.WriteTo(parsedArgs.TargetFile);
-                Console.WriteLine("Results written to the target file successfully.");
+                
+                if(parsedArgs.OptCheckOnly == false) {
+                    toEntity.WriteTo(parsedArgs.TargetFile);
+                    Console.WriteLine("Results written to the target file successfully.");
+                }
 
                 if(parsedArgs.OptVerbose) {
                     Console.WriteLine("Converted transactions:");
