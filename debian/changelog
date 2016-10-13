@@ -1,10 +1,12 @@
-fin-trans-converter (0.0.7-1ubuntu2~1.gbpf6cb5d) UNRELEASED; urgency=medium
+fin-trans-converter (0.0.8-1ubuntu1) xenial; urgency=medium
 
-  ** SNAPSHOT build @f6cb5d86a22561de1a291c384a98221170e9af48 **
+  * Transaction assignments and check-only option. Implemented support for 
+    transaction assignments definition file for refinement of transation 
+    conversions. Added the check-only option which does a dry run, meaning 
+    file are only read but nothing is written to the target.
+  * fixed format error in cheatsheet
 
-  * Transaction assignments and check-only option. Implemented support for transaction assignments definition file for refinement of transation conversions. Added the check-only option which does a dry run, meaning file are only read but nothing is written to the target.
-
- -- Georg Hirn <georg.hirn@gmail.com>  Thu, 13 Oct 2016 08:14:17 +0200
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Thu, 13 Oct 2016 08:20:38 +0200
 
 fin-trans-converter (0.0.7-1ubuntu1) xenial; urgency=medium
 
