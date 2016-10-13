@@ -8,7 +8,7 @@ gbp buildpackage --git-ignore-new -b
 ```
 
 When finished developing, create the new upstream version 
-"<major>.<minor>.<patch>-<debianversion><distribution><distroversion>", 
+`"major>.<minor>.<patch>-<debianversion><distribution><distroversion>"`, 
 e.g.: "0.0.2-1ubuntu1". Adjust the changelog entry from the snapshot release 
 to the new upstream version, add an changelog entry "new upstream version" and commit
 the changes.
@@ -19,7 +19,7 @@ git commit -m "Created new upstream version 0.0.2-1ubuntu1"
 ```
 
 Checkout the upstream branch, merge it with the master branch and create a tag
-for the new upstream version "upstream/v<major>.<minor>.<patch>",
+for the new upstream version `"upstream/v<major>.<minor>.<patch>"`,
 e.g. "upstream/v0.0.2".
 ```bash
 git checkout upstream
