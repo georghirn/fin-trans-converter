@@ -8,17 +8,17 @@
          "preLaunchTask": "build",
          "program": "${workspaceRoot}/src/finTransConverter/bin/Debug/netcoreapp1.0/FinTransConverter.dll",
          "args": [
-             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/Kreditkarte/2016/HelloBank-kreditkarte_2016-09_bis_2016-09-18.html", 
+             "/home/georg/Dokumente/Finanzen/Kontoauszuege/HelloBank/test/umsaetze-girokonto_19250_65303084205_EUR_2016-01-01_bis_2016-01-31.csv", 
              "/home/georg/Dokumente/Finanzen/Homebank/test/georg-hirn-finanzen-ab-2016-01-01.xhb", 
              "HelloBankToHomebank",
              "--verbose",
-             "--account-type=CreditCardAccount",
+             "--account-type=CheckAccount",
              "--append-duplicates", 
-             "--check-only",
+             //"--check-only",
              //"--homebank-settings-file=/home/georg/Dokumente/Finanzen/Homebank/GeorgHirn_Finanzen.xhb",
-             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_kreditkarte_paymode_patterns.xpmp", 
+             "--paymode-patterns-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_girokonto_paymode_patterns.xpmp", 
              "--transaction-assignments-file=/home/georg/Dokumente/Finanzen/Homebank/settings/hellobank_transaction_assignments.xtasg", 
-             "--target-account-pattern=\".*Kreditkarte.*Hello.*Bank.*\""
+             "--target-account-pattern=\".*Girokonto.*Hello.*Bank.*\""
          ],
          "cwd": "${workspaceRoot}/src/finTransConverter",
          "stopAtEntry": false,

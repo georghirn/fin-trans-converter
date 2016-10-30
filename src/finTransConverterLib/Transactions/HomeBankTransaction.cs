@@ -152,7 +152,6 @@ namespace FinTransConverterLib.Transactions {
                 // Check if paymode type is between accounts and if so do some further processing.
                 if(Paymode == ePaymodeType.BetweenAccounts) {
                     StrongLinkId = ++hb.MaxStrongLinkId;
-                    Flags |= (int)eTransactionFlags.Split;
                     
                     // Try to find destination account.
                     if(pmInfo?.DestinationAccountPattern != null) {
@@ -448,7 +447,7 @@ namespace FinTransConverterLib.Transactions {
                 Info = trans.Info, 
                 Tags = trans.Tags, 
                 Status = trans.Status, 
-                Flags = ((trans.Amount * (-1)) >= 0) ? (trans.Flags & (int)eTransactionFlags.Income) : (trans.Flags & ~(int)eTransactionFlags.Income), 
+                Flags = ((trans.Amount * (-1)) >= 0) ? (trans.Flags | (int)eTransactionFlags.Income) : (trans.Flags & ~(int)eTransactionFlags.Income), 
                 StrongLinkId = trans.StrongLinkId, 
                 SplitTransactions = trans.SplitTransactions
             };
