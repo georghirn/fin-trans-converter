@@ -1,3 +1,10 @@
+fin-trans-converter (0.0.9-1ubuntu1) xenial; urgency=medium
+
+  * Fixed flags bug in homebank transaction. For transactions with paymode 
+    "BetweenAccounts" the wrong falgs were assigned. This is fixed now.
+
+ -- Georg Hirn <georg@georg.hirn@notebook.com>  Sun, 30 Oct 2016 15:59:15 +0100
+
 fin-trans-converter (0.0.8-1ubuntu1) xenial; urgency=medium
 
   * Transaction assignments and check-only option. Implemented support for 
